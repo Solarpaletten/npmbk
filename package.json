@@ -1,5 +1,5 @@
 {
-  "name": "solar-app",
+  "name": "backend",
   "version": "1.0.0",
   "main": "src/index.js",
   "scripts": {
@@ -16,7 +16,7 @@
     "sequelize": "^6.37.4",
     "sequelize-cli": "^6.6.2"
   },
-  "description": "<<<<<<< HEAD # npm # solar ======= # Solar Project",
+  "description": "Backend for Solar Project",
   "keywords": [],
   "author": "",
   "license": "ISC"
