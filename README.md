@@ -23,3 +23,4 @@
 
    For more detailed instructions, please refer to the README files in each component's directory.
 >>>>>>> 703c7cef46951d1dc5c393d575031329598d3558
+npm new
