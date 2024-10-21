@@ -1,26 +1,23 @@
-<<<<<<< HEAD
-# npm
-# solar
-=======
 # Solar Project
 
-   This project consists of two main components:
+This project consists of two main components:
+1. npmfr - The user interface of the application
+2. npmbk - The backend/server-side component
 
-   1. frontend - The user interface of the application
-   2. solar-app - The backend/server-side component
+## Setup
 
-   ## Setup
+- Clone the repository
+- Set up the [npmfr](https://github.com/Solarpaletten/npmfr)
+- Set up the **npmbk**
 
-   1. Clone the repository
-   2. Set up the frontend:
-      - cd frontend
-      - npm install
-      - npm start
-   3. Set up the solar-app:
-      - cd solar-app
-      - npm install
-      - npm start
+## Run the npmbk project
 
-   For more detailed instructions, please refer to the README files in each component's directory.
->>>>>>> 703c7cef46951d1dc5c393d575031329598d3558
-npm new
+1. Install dependencies
+```
+npm i
+```
+2. Start the project
+```
+npm start
+```
+3. Open [http://localhost:3000](http://localhost:3000).
