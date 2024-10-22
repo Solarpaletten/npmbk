@@ -1,25 +1,28 @@
-require('dotenv').config(); // Load environment variables from a .env file
+require('dotenv').config(); // Load environment variables from .env
 
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const clientRoutes = require('./routes'); // Import routes for handling client-related requests
+const routes = require('./routes'); // Основные маршруты
+const clientRoutes = require('./clientRoutes'); // Маршруты для клиентов
 
 const app = express();
-const PORT = process.env.PORT || 3000; // Use the PORT from the environment or default to 3000
+const PORT = process.env.PORT || 3000; // Порт из переменных окружения или 3000 по умолчанию
 
-app.use(cors()); // Allow cross-origin requests
-app.use(bodyParser.json()); // Parse incoming requests with JSON payloads
+app.use(cors()); // Разрешаем кросс-доменные запросы
+app.use(bodyParser.json()); // Разбираем JSON-тело запросов
+app.use(express.json());
+app.use('/api', routes); // Подключаем основные маршруты
+app.use('/api/clients', clientRoutes); // Подключаем маршруты для клиентов
 
-// Use the client routes for handling requests under "/api/clients"
-app.use('/api/clients', clientRoutes);
-
-// Set up a root route at "/" to test if the server is running
+// Корневой маршрут для проверки работы сервера
 app.get('/', (req, res) => {
   res.send('Server is running! Welcome to the client API.');
 });
 
-// Start the server and listen on the specified port
+// Запуск сервера на указанном порту
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+module.exports = app;
