@@ -10,6 +10,12 @@ const client = require('./db'); // Подключение к базе данны
 
 // Маршрут для регистрации
 router.post('/register', register);
+const register = (req, res) => {
+  // Логика регистрации пользователя
+  const { username, email, password } = req.body;
+  // Добавьте код для создания пользователя и сохранения в базе данных
+  res.send('Пользователь зарегистрирован!');
+};
 
 // Маршрут для входа
 router.post('/register', async (req, res) => {
