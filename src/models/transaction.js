@@ -1,12 +1,6 @@
 // src/models/transaction.js
 
-const { Pool } = require('pg');
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: {
-    rejectUnauthorized: false
-  }
-});
+const pool = require('../db');
 
 const createTransaction = async (description, amount, userId) => {
   const res = await pool.query(
