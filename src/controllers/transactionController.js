@@ -1,22 +1,7 @@
-// src/controllers/transactionController.js
+const { createTransaction, getTransactions, getTransactionsByUserId } = require('../models/transaction');
 
-const jwt = require('jsonwebtoken');
-const { createTransaction, getTransactions } = require('../models/transaction');
-
-const authenticate = (req, res, next) => {
-  const token = req.header('Authorization');
-  if (!token) return res.status(401).json({ message: 'Access denied, no token provided' });
-
-  try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = decoded;
-    next();
-  } catch (ex) {
-    res.status(400).json({ message: 'Invalid token' });
-  }
-};
-
-const getTransactionsHandler = async (req, res) => {
+// Получить все транзакции
+exports.getTransactions = async (req, res) => {
   try {
     const transactions = await getTransactions();
     res.json(transactions);
@@ -25,9 +10,21 @@ const getTransactionsHandler = async (req, res) => {
   }
 };
 
-const addTransactionHandler = async (req, res) => {
+// Получить транзакции по ID пользователя
+exports.getUserTransactions = async (req, res) => {
+  try {
+    const userId = req.user.id; // Получаем ID пользователя из токена
+    const transactions = await getTransactionsByUserId(userId);
+    res.json(transactions);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch user transactions' });
+  }
+};
+
+// Добавить новую транзакцию
+exports.addTransaction = async (req, res) => {
   const { description, amount } = req.body;
-  const userId = req.user.id;
+  const userId = req.user.id; // Получаем ID пользователя из токена
 
   try {
     const newTransaction = await createTransaction(description, amount, userId);
@@ -36,5 +33,3 @@ const addTransactionHandler = async (req, res) => {
     res.status(500).json({ error: 'Failed to add transaction' });
   }
 };
-
-module.exports = { authenticate, getTransactionsHandler, addTransactionHandler };

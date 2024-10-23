@@ -1,40 +1,51 @@
-// src/controllers/userController.js
-
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const { createUser, getUserByEmail } = require('../models/user');
+const { getUserByEmail, createUser } = require('../models/user'); // Модели для работы с пользователями
 
+// Регистрация пользователя
 const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { username, email, password, role } = req.body;
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = await createUser(name, email, hashedPassword);
+    // Проверка, существует ли пользователь
+    const existingUser = await getUserByEmail(email);
+    if (existingUser) {
+      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
+    }
+
+    // Хеширование пароля
+    const passwordHash = await bcrypt.hash(password, 10);
+    const newUser = await createUser(username, email, passwordHash, role);
     res.status(201).json(newUser);
   } catch (err) {
-    res.status(500).json({ error: 'Failed to register user' });
+    res.status(500).json({ error: 'Ошибка регистрации пользователя' });
   }
 };
 
+// Логин пользователя
 const login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
+    // Поиск пользователя по email
     const user = await getUserByEmail(email);
     if (!user) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+      return res.status(401).json({ error: 'Неверные учетные данные' });
     }
 
-    const isValid = await bcrypt.compare(password, user.password);
-    if (!isValid) {
-      return res.status(401).json({ error: 'Invalid email or password' });
+    // Проверка пароля
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Неверные учетные данные' });
     }
 
-    const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Генерация JWT токена
+    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.json({ token });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to login' });
+    console.error('Ошибка логина:', err);
+    res.status(500).json({ error: 'Не удалось выполнить вход' });
   }
 };
 
-module.exports = { register, login };
+module.exports = { register, login }; // Экспортируем функции регистрации и логина
