@@ -1,6 +1,6 @@
-const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-const { getUserByEmail, createUser } = require('../models/user'); // Модели для работы с пользователями
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import { getUserByEmail, createUser } from '../models/user'; // Модели для работы с пользователями
 
 // Регистрация пользователя
 const register = async (req, res) => {
@@ -48,4 +48,4 @@ const login = async (req, res) => {
   }
 };
 
-module.exports = { register, login }; // Экспортируем функции регистрации и логина
+export { register, login }; // Экспортируем функции регистрации и логина

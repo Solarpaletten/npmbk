@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import { register, login } from '../controllers/userController'; // Убедитесь, что register и login импортированы
+
 const router = express.Router();
-const { register, login } = require('../controllers/userController'); // Убедитесь, что register и login импортированы
 
 // Маршрут для регистрации
 router.post('/register', register);
@@ -8,6 +9,6 @@ router.post('/register', register);
 // Маршрут для логина
 router.post('/login', login);
 
-module.exports = router;
+export default router;
 
 

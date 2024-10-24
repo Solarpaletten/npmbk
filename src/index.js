@@ -1,30 +1,31 @@
 import express from 'express';
-import cors from 'cors';
-import fetch from 'node-fetch';  // Используем import вместо require
 import clientRoutes from './routes/clientRoutes.js';  // Используем import вместо require
-
-
-
-
-
-
+import fetch from 'node-fetch';  // Добавляем импорт fetch
 
 const app = express();
 
-// Middleware для обработки JSON
-app.use(express.json());
+// Добавляем middleware для обработки CORS
+app.use((_, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  next();
+});
 
-// Настройка CORS
+import cors from 'cors';
 app.use(cors({
-  origin: 'http://localhost:3001',  // Здесь должен быть фронтенд (React)
+  origin: ['http://localhost:3000', 'https://npmfr.onrender.com'],
   methods: 'GET,POST,PUT,DELETE',
-  credentials: true  // Если необходимо передавать куки или заголовки авторизации
+  credentials: true
 }));
 
+
+app.use(express.json());  // Добавляем middleware для обработки JSON
+
+app.use('/api/clients', clientRoutes);  // Добавляем маршруты для клиентов
+
 // Маршрут для получения клиентов через fetch
-app.get('/fetch-clients', async (req, res) => {
+app.get('/fetch-clients', async (_, res) => {
   try {
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000'; // URL сервера backend
+    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:4000'; 'https://npmbk.onrender.com'; 
     const response = await fetch(`${API_URL}/api/clients`);
     const clients = await response.json();
     res.json(clients);
@@ -34,22 +35,18 @@ app.get('/fetch-clients', async (req, res) => {
   }
 });
 
-// Подключение маршрутов для обработки запросов от фронтенда
-app.use('/api/clients', clientRoutes);
-
 // Корневой маршрут для главной страницы
-app.get('/', (req, res) => {
+app.get('/', (_, res) => {
   res.send('Добро пожаловать! Вы вошли на сервер backend.');
 });
 
 // Обработка ошибки 404 для несуществующих маршрутов
-app.use((req, res) => {
+app.use((_, res) => {
   res.status(404).send({ error: 'Not found' });
 });
 
 // Запуск сервера
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;  // Обратите внимание, что порт указан только один раз
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
