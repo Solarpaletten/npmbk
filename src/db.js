@@ -1,15 +1,14 @@
-const { Client } = require('pg');
+const { Pool } = require('pg');
 
-// Используем переменную окружения DATABASE_URL для подключения к базе данных
-const client = new Client({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false // Отключаем проверку сертификата SSL
   }
 });
 
-client.connect()
+pool.connect()
   .then(() => console.log('Connected to PostgreSQL'))
   .catch(err => console.error('Connection error', err.stack));
 
-module.exports = client;
+module.exports = pool;

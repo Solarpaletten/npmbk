@@ -1,27 +1,38 @@
-require('dotenv').config();
-
 const express = require('express');
 const cors = require('cors');
-const bodyParser = require('body-parser');
-const userRoutes = require('./routes/userRoutes');
-const transactionRoutes = require('./routes/transactionRoutes');
+const dotenv = require('dotenv');
+const path = require('path');
+dotenv.config();
 
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(path.join(__dirname, '../npmfr/build')));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.resolve(__dirname, '../npmfr', 'build', 'index.html'));
+  });
+}
+
+const clientRoutes = require('./routes/clientRoutes');
+const authRoutes = require('./routes/authRoutes');
+
+// Initialize Express
 const app = express();
-const PORT = process.env.PORT || 3000;
 
-app.use(cors());
-app.use(bodyParser.json());
-app.use(express.json());
+// Middleware
+app.use(cors());  // Enable CORS for all routes (you can customize)
+app.use(express.json()); // Parse JSON bodies
 
-app.use('/api', userRoutes);
-app.use('/api', transactionRoutes);
+// API Routes
+app.use('/api/clients', clientRoutes);
+app.use('/api/auth', authRoutes);
 
+// Root endpoint
 app.get('/', (req, res) => {
-  res.send('Server is running! Welcome to the client API.');
+  res.send('Welcome to the API!');
 });
 
+// Start Server
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
-
-module.exports = app;
