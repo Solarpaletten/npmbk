@@ -20,4 +20,4 @@ npm i
 ```
 npm start
 ```
-3. Open [http://localhost:3000](http://localhost:3000).
+3. Open [http://localhost:4000](http://localhost:4000).
