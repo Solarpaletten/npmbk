@@ -1,6 +1,7 @@
 const pool = require("../db");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const { createUser } = require("./userController");
 
 const loginUser = async (req, res) => {
   const { email, password } = req.body;
@@ -23,10 +24,15 @@ const loginUser = async (req, res) => {
     const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
+
     res.json({ token });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
-module.exports = { loginUser };
+const registerUser = async (req, res) => {
+  await createUser(req, res);
+};
+
+module.exports = { loginUser, registerUser };
