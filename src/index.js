@@ -1,37 +1,29 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const path = require('path');
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const authMiddleware = require("./middlewares/authMiddleware");
+
 dotenv.config();
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../npmfr/build')));
+const clientRoutes = require("./routes/clientRoutes");
+const userRoutes = require("./routes/userRoutes");
+const authRoutes = require("./routes/authRoutes");
 
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../npmfr', 'build', 'index.html'));
-  });
-}
-
-const clientRoutes = require('./routes/clientRoutes');
-const authRoutes = require('./routes/authRoutes');
-
-// Initialize Express
 const app = express();
 
-// Middleware
-app.use(cors());  // Enable CORS for all routes (you can customize)
-app.use(express.json()); // Parse JSON bodies
+app.use(cors());
+app.use(express.json());
 
 // API Routes
-app.use('/api/clients', clientRoutes);
-app.use('/api/auth', authRoutes);
+app.use("/api/clients", authMiddleware, clientRoutes);
+app.use("/api/users", authMiddleware, userRoutes);
+app.use("/api/auth", authRoutes);
 
 // Root endpoint
-app.get('/', (req, res) => {
-  res.send('Welcome to the API!');
+app.get("/", (req, res) => {
+  res.send("Welcome to the API!");
 });
 
-// Start Server
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

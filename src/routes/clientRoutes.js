@@ -8,7 +8,6 @@ const {
 } = require("../controllers/clientController");
 const router = express.Router();
 
-// CRUD Endpoints for Clients
 router.get("/", getClients);
 router.get("/:id", getClient);
 router.post("/", createClient);
