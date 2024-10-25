@@ -1,20 +1,15 @@
-import { Client } from 'pg';
+const { Pool } = require("pg");
 
-// Проверяем, определена ли переменная окружения DATABASE_URL
-if (!process.env.DATABASE_URL) {
-  throw new Error('DATABASE_URL environment variable is not defined');
-}
-
-// Используем переменную окружения DATABASE_URL для подключения к базе данных
-const client = new Client({
+const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // Отключаем проверку сертификата SSL
-  }
+    rejectUnauthorized: false,
+  },
 });
 
-client.connect()
-  .then(() => console.log('Connected to PostgreSQL'))
-  .catch(err => console.error('Connection error', err.stack));
+pool
+  .connect()
+  .then(() => console.log("Connected to PostgreSQL"))
+  .catch((err) => console.error("Connection error", err.stack));
 
-export default client;
+module.exports = pool;

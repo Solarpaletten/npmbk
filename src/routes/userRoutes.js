@@ -1,14 +1,17 @@
-import express from 'express';
-import { register, login } from '../controllers/userController'; // Убедитесь, что register и login импортированы
-
+const express = require("express");
+const {
+  getUsers,
+  getUser,
+  createUser,
+  updateUser,
+  deleteUser,
+} = require("../controllers/userController");
 const router = express.Router();
 
-// Маршрут для регистрации
-router.post('/register', register);
+router.get("/", getUsers);
+router.get("/:id", getUser);
+router.post("/", createUser);
+router.put("/:id", updateUser);
+router.delete("/:id", deleteUser);
 
-// Маршрут для логина
-router.post('/login', login);
-
-export default router;
-
-
+module.exports = router;

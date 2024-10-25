@@ -1,51 +1,75 @@
-import bcrypt from 'bcrypt';
-import jwt from 'jsonwebtoken';
-import { getUserByEmail, createUser } from '../models/user'; // Модели для работы с пользователями
+const pool = require("../db");
+const bcrypt = require("bcryptjs");
 
-// Регистрация пользователя
-const register = async (req, res) => {
-  const { username, email, password, role } = req.body;
-
+const getUsers = async (req, res) => {
   try {
-    // Проверка, существует ли пользователь
-    const existingUser = await getUserByEmail(email);
-    if (existingUser) {
-      return res.status(400).json({ message: 'Пользователь с таким email уже существует' });
-    }
-
-    // Хеширование пароля
-    const passwordHash = await bcrypt.hash(password, 10);
-    const newUser = await createUser(username, email, passwordHash, role);
-    res.status(201).json(newUser);
-  } catch (err) {
-    res.status(500).json({ error: 'Ошибка регистрации пользователя' });
+    const result = await pool.query("SELECT * FROM users");
+    res.json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-// Логин пользователя
-const login = async (req, res) => {
-  const { email, password } = req.body;
-
+const getUser = async (req, res) => {
+  const { id } = req.params;
   try {
-    // Поиск пользователя по email
-    const user = await getUserByEmail(email);
-    if (!user) {
-      return res.status(401).json({ error: 'Неверные учетные данные' });
+    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
     }
-
-    // Проверка пароля
-    const isValidPassword = await bcrypt.compare(password, user.password_hash);
-    if (!isValidPassword) {
-      return res.status(401).json({ error: 'Неверные учетные данные' });
-    }
-
-    // Генерация JWT токена
-    const token = jwt.sign({ id: user.id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.json({ token });
-  } catch (err) {
-    console.error('Ошибка логина:', err);
-    res.status(500).json({ error: 'Не удалось выполнить вход' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 };
 
-export { register, login }; // Экспортируем функции регистрации и логина
+const createUser = async (req, res) => {
+  const { username, email, password } = req.body;
+  const role = "standard"; // TODO for now by default = standard
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  try {
+    const result = await pool.query(
+      "INSERT INTO users (username, email, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
+      [username, email, role, hashedPassword]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error });
+  }
+};
+
+const updateUser = async (req, res) => {
+  const { id } = req.params;
+  const { username, email, role } = req.body;
+  try {
+    const result = await pool.query(
+      "UPDATE users SET username = $1, email = $2, role = $3 WHERE id = $4 RETURNING *",
+      [username, email, role, id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+const deleteUser = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      "DELETE FROM users WHERE id = $1 RETURNING *",
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ message: "User deleted" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+module.exports = { getUsers, getUser, createUser, updateUser, deleteUser };
