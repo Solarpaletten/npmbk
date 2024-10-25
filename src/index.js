@@ -9,18 +9,6 @@ const clientRoutes = require("./routes/clientRoutes");
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../npmfr/build')));
-
-  app.get('*', (req, res) => {
-    res.sendFile(path.resolve(__dirname, '../npmfr', 'build', 'index.html'));
-  });
-}
-
-const clientRoutes = require('./routes/clientRoutes');
-const authRoutes = require('./routes/authRoutes');
-
-// Initialize Express
 const app = express();
 
 app.use(cors());
