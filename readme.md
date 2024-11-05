@@ -89,3 +89,4 @@ node scripts/user-management.js
 
 новый
 тестировал
+новое
