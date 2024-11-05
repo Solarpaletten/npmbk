@@ -88,3 +88,4 @@ node scripts/user-management.js
 # До скорой встречи! 👋🏼🏼
 
 новый
+тестировал
