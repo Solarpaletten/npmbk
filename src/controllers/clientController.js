@@ -26,26 +26,16 @@ const getClient = async (req, res) => {
 
 const createClient = async (req, res) => {
   try {
-    // Логируем входящие данные
-    console.log('Received request body:', req.body);
-    
-    // Деструктурируем данные из тела запроса с дефолтными значениями
-    const { 
-      name, 
-      email, 
-      phone,
-      code = null,     // Добавляем значение по умолчанию
-      vat_code = null  // Добавляем значение по умолчанию
-    } = req.body;
+    console.log("Received request body:", req.body);
 
-    // Логируем переменные после деструктуризации
-    console.log('Processed data:', { name, email, phone, code, vat_code });
+    const { name, email, phone, code = null, vat_code = null } = req.body;
 
-    // Проверяем обязательные поля
+    console.log("Processed data:", { name, email, phone, code, vat_code });
+
     if (!name || !email || !phone) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "Name, email and phone are required",
-        received: { name, email, phone }
+        received: { name, email, phone },
       });
     }
 
@@ -57,16 +47,16 @@ const createClient = async (req, res) => {
       RETURNING *`;
 
     const values = [name, email, phone, code, vat_code];
-    console.log('Query values:', values);
+    console.log("Query values:", values);
 
     const result = await pool.query(query, values);
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error('Error in createClient:', error);
-    res.status(500).json({ 
+    console.error("Error in createClient:", error);
+    res.status(500).json({
       message: "Error creating client",
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
     });
   }
 };

@@ -4,8 +4,6 @@ const dotenv = require("dotenv");
 const authMiddleware = require("./middlewares/authMiddleware");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 
-
-
 dotenv.config();
 
 const clientRoutes = require("./routes/clientRoutes");
