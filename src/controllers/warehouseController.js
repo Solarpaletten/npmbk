@@ -1,6 +1,5 @@
 const pool = require("../db");
 
-// Получить все товары
 const getProducts = async (req, res) => {
   try {
     const result = await pool.query(
@@ -12,7 +11,6 @@ const getProducts = async (req, res) => {
   }
 };
 
-// Получить конкретный товар
 const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -28,7 +26,6 @@ const getProduct = async (req, res) => {
   }
 };
 
-// Создать новый товар
 const createProduct = async (req, res) => {
   try {
     const { product_name, quantity, price } = req.body;
@@ -42,7 +39,6 @@ const createProduct = async (req, res) => {
   }
 };
 
-// Обновить товар
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -63,7 +59,6 @@ const updateProduct = async (req, res) => {
   }
 };
 
-// Удалить товар
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -82,20 +77,17 @@ const deleteProduct = async (req, res) => {
   }
 };
 
-// Оформить приход товара
 const addIncoming = async (req, res) => {
   try {
     const { warehouse_id, quantity, price_per_unit, supplier } = req.body;
     
     await pool.query('BEGIN');
 
-    // Добавляем запись в историю прихода
     const incoming = await pool.query(
       'INSERT INTO incoming_goods (warehouse_id, quantity, price_per_unit, supplier) VALUES ($1, $2, $3, $4) RETURNING *',
       [warehouse_id, quantity, price_per_unit, supplier]
     );
 
-    // Обновляем количество на складе
     await pool.query(
       'UPDATE warehouse SET quantity = quantity + $1 WHERE id = $2',
       [quantity, warehouse_id]
@@ -109,14 +101,12 @@ const addIncoming = async (req, res) => {
   }
 };
 
-// Оформить продажу
 const createSale = async (req, res) => {
   try {
     const { warehouse_id, quantity, price_per_unit, client_id } = req.body;
     
     await pool.query('BEGIN');
 
-    // Проверяем наличие товара
     const stock = await pool.query(
       'SELECT quantity FROM warehouse WHERE id = $1',
       [warehouse_id]
@@ -126,13 +116,11 @@ const createSale = async (req, res) => {
       throw new Error('Недостаточно товара на складе');
     }
 
-    // Создаем запись о продаже
     const sale = await pool.query(
       'INSERT INTO sales (warehouse_id, quantity, price_per_unit, client_id) VALUES ($1, $2, $3, $4) RETURNING *',
       [warehouse_id, quantity, price_per_unit, client_id]
     );
 
-    // Уменьшаем количество на складе
     await pool.query(
       'UPDATE warehouse SET quantity = quantity - $1 WHERE id = $2',
       [quantity, warehouse_id]
@@ -146,7 +134,6 @@ const createSale = async (req, res) => {
   }
 };
 
-// Получить историю движения товара
 const getProductHistory = async (req, res) => {
   try {
     const { id } = req.params;
@@ -178,7 +165,6 @@ const getProductHistory = async (req, res) => {
   }
 };
 
-// Получить текущие остатки
 const getStock = async (req, res) => {
   try {
     const stock = await pool.query(
