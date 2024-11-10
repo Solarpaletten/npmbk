@@ -94,10 +94,46 @@ const deleteClient = async (req, res) => {
   }
 };
 
+const copyClient = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Получаем клиента для копирования
+    const sourceClient = await pool.query('SELECT * FROM clients WHERE id = $1', [id]);
+
+    if (sourceClient.rows.length === 0) {
+      return res.status(404).json({ message: 'Client not found' });
+    }
+
+    const client = sourceClient.rows[0];
+
+    // Создаём копию с пометкой
+    const query = `
+      INSERT INTO clients 
+        (name, email, phone, code, vat_code) 
+      VALUES 
+        ($1, $2, $3, $4, $5) 
+      RETURNING *`;
+
+    const values = [
+      `${client.name} (Copy)`,
+      client.email,
+      client.phone,
+      client.code,
+      client.vat_code,
+    ];
+
+    const result = await pool.query(query, values);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   getClients,
   getClient,
   createClient,
   updateClient,
   deleteClient,
+  copyClient,
 };
