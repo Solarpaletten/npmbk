@@ -42,8 +42,9 @@ const getUser = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const { username, email, password } = req.body;
-  const role = 'standard'; // TODO for now by default = standard
+  const { username, email } = req.body;
+  const password = req.body.password || 'default1234';
+  const role = req.body.role || 'standard';
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
