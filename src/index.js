@@ -6,7 +6,6 @@ const authMiddleware = require("./middlewares/authMiddleware");
 dotenv.config();
 
 const clientRoutes = require("./routes/clientRoutes");
-const dashboardRoutes = require("./routes/dashboardRoutes");
 const userRoutes = require("./routes/userRoutes");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const authRoutes = require("./routes/authRoutes");
@@ -18,7 +17,6 @@ app.use(express.json());
 
 // API Routes
 app.use("/api/clients", authMiddleware, clientRoutes);
-app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/warehouse", authMiddleware, warehouseRoutes);
 app.use("/api/auth", authRoutes);
