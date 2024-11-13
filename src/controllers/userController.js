@@ -3,7 +3,25 @@ const bcrypt = require("bcryptjs");
 
 const getUsers = async (req, res) => {
   try {
-    const result = await pool.query("SELECT * FROM users");
+    const { search = "", sort = "username", order = "ASC" } = req.query;
+
+    const searchQuery = `%${search}%`;
+    const sortColumn = ["username", "email", "role", "created_at"].includes(
+      sort
+    )
+      ? sort
+      : "username";
+    const sortOrder = order === "DESC" ? "DESC" : "ASC";
+
+    const result = await pool.query(
+      `
+      SELECT * FROM users
+      WHERE username ILIKE $1 OR email ILIKE $1
+      ORDER BY ${sortColumn} ${sortOrder}
+      `,
+      [searchQuery]
+    );
+
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -24,8 +42,9 @@ const getUser = async (req, res) => {
 };
 
 const createUser = async (req, res) => {
-  const { username, email, password } = req.body;
-  const role = "standard"; // TODO for now by default = standard
+  const { username, email } = req.body;
+  const password = req.body.password || "default1234";
+  const role = req.body.role || "standard";
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
