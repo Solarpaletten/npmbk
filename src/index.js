@@ -8,7 +8,7 @@ dotenv.config();
 const clientRoutes = require("./routes/clientRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const userRoutes = require("./routes/userRoutes");
-const warehouseRoutes = require("./routes/warehouseRoutes");
+const productRoutes = require("./routes/productRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
@@ -20,7 +20,7 @@ app.use(express.json());
 app.use("/api/clients", authMiddleware, clientRoutes);
 app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
-app.use("/api/warehouse", authMiddleware, warehouseRoutes);
+app.use("/api/products", authMiddleware, productRoutes);
 app.use("/api/auth", authRoutes);
 
 // Root endpoint
