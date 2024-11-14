@@ -2,24 +2,50 @@ const pool = require("../db");
 
 const getProducts = async (req, res) => {
   try {
+    const { search = "", sort = "name", order = "ASC" } = req.query;
+
+    const searchQuery = `%${search}%`;
+    const sortColumn = [
+      "name",
+      "code",
+      "category",
+      "unit",
+      "vat_rate",
+      "brand",
+      "price_purchase",
+      "price_sale",
+      "min_quantity",
+    ].includes(sort)
+      ? sort
+      : "name";
+    const sortOrder = order === "DESC" ? "DESC" : "ASC";
+
     const result = await pool.query(
-      "SELECT * FROM warehouse ORDER BY product_name"
+      `
+        SELECT * FROM products
+        WHERE name ILIKE $1 OR category ILIKE $1 OR unit ILIKE $1 OR brand ILIKE $1
+        ORDER BY ${sortColumn} ${sortOrder}
+        `,
+      [searchQuery]
     );
+
     res.json(result.rows);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
 const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query("SELECT * FROM warehouse WHERE id = $1", [id]);
-    
+    const result = await pool.query("SELECT * FROM warehouse WHERE id = $1", [
+      id,
+    ]);
+
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "Товар не найден" });
     }
-    
+
     res.json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -43,7 +69,7 @@ const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
     const { product_name, quantity, price } = req.body;
-    
+
     const result = await pool.query(
       "UPDATE warehouse SET product_name = $1, quantity = $2, price = $3 WHERE id = $4 RETURNING *",
       [product_name, quantity, price, id]
@@ -80,23 +106,23 @@ const deleteProduct = async (req, res) => {
 const addIncoming = async (req, res) => {
   try {
     const { warehouse_id, quantity, price_per_unit, supplier } = req.body;
-    
-    await pool.query('BEGIN');
+
+    await pool.query("BEGIN");
 
     const incoming = await pool.query(
-      'INSERT INTO incoming_goods (warehouse_id, quantity, price_per_unit, supplier) VALUES ($1, $2, $3, $4) RETURNING *',
+      "INSERT INTO incoming_goods (warehouse_id, quantity, price_per_unit, supplier) VALUES ($1, $2, $3, $4) RETURNING *",
       [warehouse_id, quantity, price_per_unit, supplier]
     );
 
     await pool.query(
-      'UPDATE warehouse SET quantity = quantity + $1 WHERE id = $2',
+      "UPDATE warehouse SET quantity = quantity + $1 WHERE id = $2",
       [quantity, warehouse_id]
     );
 
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
     res.json(incoming.rows[0]);
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     res.status(500).json({ message: error.message });
   }
 };
@@ -104,32 +130,32 @@ const addIncoming = async (req, res) => {
 const createSale = async (req, res) => {
   try {
     const { warehouse_id, quantity, price_per_unit, client_id } = req.body;
-    
-    await pool.query('BEGIN');
+
+    await pool.query("BEGIN");
 
     const stock = await pool.query(
-      'SELECT quantity FROM warehouse WHERE id = $1',
+      "SELECT quantity FROM warehouse WHERE id = $1",
       [warehouse_id]
     );
 
     if (stock.rows[0].quantity < quantity) {
-      throw new Error('Недостаточно товара на складе');
+      throw new Error("Недостаточно товара на складе");
     }
 
     const sale = await pool.query(
-      'INSERT INTO sales (warehouse_id, quantity, price_per_unit, client_id) VALUES ($1, $2, $3, $4) RETURNING *',
+      "INSERT INTO sales (warehouse_id, quantity, price_per_unit, client_id) VALUES ($1, $2, $3, $4) RETURNING *",
       [warehouse_id, quantity, price_per_unit, client_id]
     );
 
     await pool.query(
-      'UPDATE warehouse SET quantity = quantity - $1 WHERE id = $2',
+      "UPDATE warehouse SET quantity = quantity - $1 WHERE id = $2",
       [quantity, warehouse_id]
     );
 
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
     res.json(sale.rows[0]);
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     res.status(500).json({ message: error.message });
   }
 };
@@ -168,7 +194,7 @@ const getProductHistory = async (req, res) => {
 const getStock = async (req, res) => {
   try {
     const stock = await pool.query(
-      'SELECT * FROM warehouse WHERE quantity > 0'
+      "SELECT * FROM warehouse WHERE quantity > 0"
     );
     res.json(stock.rows);
   } catch (error) {
@@ -185,6 +211,5 @@ module.exports = {
   addIncoming,
   createSale,
   getProductHistory,
-  getStock
+  getStock,
 };
-

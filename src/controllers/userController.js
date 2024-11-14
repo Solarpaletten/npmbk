@@ -16,7 +16,7 @@ const getUsers = async (req, res) => {
     const result = await pool.query(
       `
       SELECT * FROM users
-      WHERE username ILIKE $1 OR email ILIKE $1
+      WHERE username ILIKE $1 OR email ILIKE $1 OR role ILIKE $1
       ORDER BY ${sortColumn} ${sortOrder}
       `,
       [searchQuery]
