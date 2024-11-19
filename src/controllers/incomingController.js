@@ -1,8 +1,5 @@
-// controllers/incomingController.js
+const pool = require("../db");
 
-const pool = require('../db');
-
-// Получение всех записей поступлений
 const getIncomingProducts = async (req, res) => {
   try {
     const result = await pool.query(`
@@ -15,7 +12,6 @@ const getIncomingProducts = async (req, res) => {
   }
 };
 
-// Получение одной записи поступления
 const getIncomingProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -28,7 +24,7 @@ const getIncomingProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Поступление не найдено' });
+      return res.status(404).json({ error: "Поступление не найдено" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -37,7 +33,6 @@ const getIncomingProduct = async (req, res) => {
   }
 };
 
-// Создание записи о поступлении
 const createIncomingProduct = async (req, res) => {
   try {
     const {
@@ -55,9 +50,8 @@ const createIncomingProduct = async (req, res) => {
       vat_amount,
     } = req.body;
 
-    await pool.query('BEGIN');
+    await pool.query("BEGIN");
 
-    // Создаем запись о поступлении
     const incomingResult = await pool.query(
       `
       INSERT INTO incoming_products 
@@ -83,7 +77,6 @@ const createIncomingProduct = async (req, res) => {
       ]
     );
 
-    // Обновляем количество товара на складе
     await pool.query(
       `
       UPDATE products 
@@ -94,15 +87,14 @@ const createIncomingProduct = async (req, res) => {
       [quantity, price_per_unit, product_code]
     );
 
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
     res.status(201).json(incomingResult.rows[0]);
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     res.status(500).json({ error: error.message });
   }
 };
 
-// Обновление записи о поступлении
 const updateIncomingProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -149,7 +141,7 @@ const updateIncomingProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Поступление не найдено' });
+      return res.status(404).json({ error: "Поступление не найдено" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -158,7 +150,6 @@ const updateIncomingProduct = async (req, res) => {
   }
 };
 
-// Удаление записи о поступлении
 const deleteIncomingProduct = async (req, res) => {
   try {
     const { id } = req.params;
@@ -172,7 +163,7 @@ const deleteIncomingProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Поступление не найдено' });
+      return res.status(404).json({ error: "Поступление не найдено" });
     }
 
     res.status(200).json(result.rows[0]);
