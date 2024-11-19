@@ -9,7 +9,7 @@ const clientRoutes = require("./routes/clientRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
-const warehouseRoutes = require("./routes/saleRoutes");
+const warehouseRoutes = require("./routes/warehouseRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
