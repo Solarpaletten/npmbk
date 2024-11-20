@@ -1,26 +1,26 @@
 const express = require("express");
 const {
-  getIncomingProducts,
-  getIncomingProduct,
-  createIncomingProduct,
-  updateIncomingProduct,
-  deleteIncomingProduct,
-} = require("../controllers/incomingController");
+  getPurchases,
+  getPurchase,
+  createPurchase,
+  updatePurchase,
+  deletePurchase,
+} = require("../controllers/purchaseController");
 const {
   getSales,
   getSale,
   createSale,
   updateSale,
   deleteSale,
-} = require("../controllers/salesController");
+} = require("../controllers/saleController");
 
 const router = express.Router();
 
-router.get("/incoming", getIncomingProducts);
-router.get("/incoming/:id", getIncomingProduct);
-router.post("/incoming", createIncomingProduct);
-router.put("/incoming/:id", updateIncomingProduct);
-router.delete("/incoming/:id", deleteIncomingProduct);
+router.get("/purchases", getPurchases);
+router.get("/purchases/:id", getPurchase);
+router.post("/purchases", createPurchase);
+router.put("/purchases/:id", updatePurchase);
+router.delete("/purchases/:id", deletePurchase);
 
 router.get("/sales", getSales);
 router.get("/sales/:id", getSale);
