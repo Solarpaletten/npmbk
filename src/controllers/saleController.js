@@ -2,9 +2,27 @@ const pool = require("../db");
 
 const getSales = async (req, res) => {
   try {
-    const result = await pool.query(
-      "SELECT * FROM sales ORDER BY created_at DESC"
-    );
+    // TODO add search/sort
+    const query = `
+      SELECT 
+        sales.sale_date,
+        clients.name AS client,     
+        warehouse.name AS warehouse, 
+        buyer.name AS buyer,        
+        sales.invoice_number,
+        sales.operation_type,
+        sales.vat_rate,
+        sales.total_amount,
+        sales.currency,
+        sales.created_at
+      FROM sales
+      JOIN clients ON sales.client_id = clients.id         
+      JOIN warehouse ON sales.warehouse_id = warehouse.id
+      JOIN clients AS buyer ON sales.buyer_id = buyer.id 
+      ORDER BY sales.created_at DESC;
+    `;
+
+    const result = await pool.query(query);
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -17,7 +35,7 @@ const getSale = async (req, res) => {
     const result = await pool.query("SELECT * FROM sales WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Продажа не найдена" });
+      return res.status(404).json({ error: "Sale not found" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -122,7 +140,7 @@ const updateSale = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Продажа не найдена" });
+      return res.status(404).json({ error: "Sale not found" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -140,7 +158,7 @@ const deleteSale = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Продажа не найдена" });
+      return res.status(404).json({ error: "Sale not found" });
     }
 
     res.status(200).json(result.rows[0]);
