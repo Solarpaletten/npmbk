@@ -1,10 +1,10 @@
-// controllers/salesController.js
-
-const pool = require('../db');
+const pool = require("../db");
 
 const getSales = async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM sales_products ORDER BY created_at DESC');
+    const result = await pool.query(
+      "SELECT * FROM sales ORDER BY created_at DESC"
+    );
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -14,10 +14,10 @@ const getSales = async (req, res) => {
 const getSale = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('SELECT * FROM sales_products WHERE id = $1', [id]);
+    const result = await pool.query("SELECT * FROM sales WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Продажа не найдена' });
+      return res.status(404).json({ error: "Продажа не найдена" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -42,11 +42,10 @@ const createSale = async (req, res) => {
       warehouse,
     } = req.body;
 
-    await pool.query('BEGIN');
+    await pool.query("BEGIN");
 
-    // Создаем запись о продаже
     const saleResult = await pool.query(
-      `INSERT INTO sales_products 
+      `INSERT INTO sales 
        (product_code, quantity, price_per_unit, client, document_date,
         invoice_number, currency, vat_rate, vat_amount, payment_type, warehouse)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
@@ -66,7 +65,6 @@ const createSale = async (req, res) => {
       ]
     );
 
-    // Обновляем количество товара на складе
     await pool.query(
       `UPDATE products 
        SET quantity = quantity - $1
@@ -74,10 +72,10 @@ const createSale = async (req, res) => {
       [quantity, product_code]
     );
 
-    await pool.query('COMMIT');
+    await pool.query("COMMIT");
     res.status(201).json(saleResult.rows[0]);
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     res.status(500).json({ error: error.message });
   }
 };
@@ -100,7 +98,7 @@ const updateSale = async (req, res) => {
     } = req.body;
 
     const result = await pool.query(
-      `UPDATE sales_products 
+      `UPDATE sales 
        SET product_code = $1, quantity = $2, price_per_unit = $3,
            client = $4, document_date = $5, invoice_number = $6,
            currency = $7, vat_rate = $8, vat_amount = $9,
@@ -124,7 +122,7 @@ const updateSale = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Продажа не найдена' });
+      return res.status(404).json({ error: "Продажа не найдена" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -136,10 +134,13 @@ const updateSale = async (req, res) => {
 const deleteSale = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await pool.query('DELETE FROM sales_products WHERE id = $1 RETURNING *', [id]);
+    const result = await pool.query(
+      "DELETE FROM sales WHERE id = $1 RETURNING *",
+      [id]
+    );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Продажа не найдена' });
+      return res.status(404).json({ error: "Продажа не найдена" });
     }
 
     res.status(200).json(result.rows[0]);

@@ -1,12 +1,9 @@
-// controllers/incomingController.js
+const pool = require("../db");
 
-const pool = require('../db');
-
-// Получение всех записей поступлений
-const getIncomingProducts = async (req, res) => {
+const getPurchases = async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT * FROM incoming_products 
+      SELECT * FROM purchases 
       ORDER BY created_at DESC
     `);
     res.status(200).json(result.rows);
@@ -15,20 +12,19 @@ const getIncomingProducts = async (req, res) => {
   }
 };
 
-// Получение одной записи поступления
-const getIncomingProduct = async (req, res) => {
+const getPurchase = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
       `
-      SELECT * FROM incoming_products 
+      SELECT * FROM purchases 
       WHERE id = $1
     `,
       [id]
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Поступление не найдено' });
+      return res.status(404).json({ error: "Поступление не найдено" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -37,8 +33,7 @@ const getIncomingProduct = async (req, res) => {
   }
 };
 
-// Создание записи о поступлении
-const createIncomingProduct = async (req, res) => {
+const createPurchase = async (req, res) => {
   try {
     const {
       product_code,
@@ -55,12 +50,11 @@ const createIncomingProduct = async (req, res) => {
       vat_amount,
     } = req.body;
 
-    await pool.query('BEGIN');
+    await pool.query("BEGIN");
 
-    // Создаем запись о поступлении
-    const incomingResult = await pool.query(
+    const purchaseResult = await pool.query(
       `
-      INSERT INTO incoming_products 
+      INSERT INTO purchases 
       (product_code, product_name, quantity, price_per_unit, total_amount, 
        supplier, currency, document_date, invoice_number, operation_type,
        vat_rate, vat_amount)
@@ -83,7 +77,6 @@ const createIncomingProduct = async (req, res) => {
       ]
     );
 
-    // Обновляем количество товара на складе
     await pool.query(
       `
       UPDATE products 
@@ -94,16 +87,15 @@ const createIncomingProduct = async (req, res) => {
       [quantity, price_per_unit, product_code]
     );
 
-    await pool.query('COMMIT');
-    res.status(201).json(incomingResult.rows[0]);
+    await pool.query("COMMIT");
+    res.status(201).json(purchaseResult.rows[0]);
   } catch (error) {
-    await pool.query('ROLLBACK');
+    await pool.query("ROLLBACK");
     res.status(500).json({ error: error.message });
   }
 };
 
-// Обновление записи о поступлении
-const updateIncomingProduct = async (req, res) => {
+const updatePurchase = async (req, res) => {
   try {
     const { id } = req.params;
     const {
@@ -123,7 +115,7 @@ const updateIncomingProduct = async (req, res) => {
 
     const result = await pool.query(
       `
-      UPDATE incoming_products 
+      UPDATE purchases 
       SET product_code = $1, product_name = $2, quantity = $3,
           price_per_unit = $4, total_amount = $5, supplier = $6,
           currency = $7, document_date = $8, invoice_number = $9,
@@ -149,7 +141,7 @@ const updateIncomingProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Поступление не найдено' });
+      return res.status(404).json({ error: "Поступление не найдено" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -158,13 +150,12 @@ const updateIncomingProduct = async (req, res) => {
   }
 };
 
-// Удаление записи о поступлении
-const deleteIncomingProduct = async (req, res) => {
+const deletePurchase = async (req, res) => {
   try {
     const { id } = req.params;
     const result = await pool.query(
       `
-      DELETE FROM incoming_products 
+      DELETE FROM purchases 
       WHERE id = $1 
       RETURNING *
     `,
@@ -172,7 +163,7 @@ const deleteIncomingProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Поступление не найдено' });
+      return res.status(404).json({ error: "Поступление не найдено" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -182,9 +173,9 @@ const deleteIncomingProduct = async (req, res) => {
 };
 
 module.exports = {
-  getIncomingProducts,
-  getIncomingProduct,
-  createIncomingProduct,
-  updateIncomingProduct,
-  deleteIncomingProduct,
+  getPurchases,
+  getPurchase,
+  createPurchase,
+  updatePurchase,
+  deletePurchase,
 };
