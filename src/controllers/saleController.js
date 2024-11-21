@@ -8,7 +8,7 @@ const getSales = async (req, res) => {
         sales.id,
         sales.sale_date,
         clients.name AS client,     
-        warehouse.name AS warehouse, 
+        warehouses.name AS warehouse, 
         buyer.name AS buyer,        
         sales.invoice_number,
         sales.invoice_type,
@@ -19,7 +19,7 @@ const getSales = async (req, res) => {
         sales.created_at
       FROM sales
       JOIN clients ON sales.client_id = clients.id         
-      JOIN warehouse ON sales.warehouse_id = warehouse.id
+      JOIN warehouses ON sales.warehouse_id = warehouses.id
       JOIN clients AS buyer ON sales.buyer_id = buyer.id 
       ORDER BY sales.created_at DESC;
     `;
