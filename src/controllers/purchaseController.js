@@ -55,61 +55,43 @@ const getPurchase = async (req, res) => {
 const createPurchase = async (req, res) => {
   try {
     const {
-      product_code,
-      product_name,
-      quantity,
-      price_per_unit,
-      total_amount,
-      supplier,
-      currency,
-      document_date,
+      invoice_type,
       invoice_number,
-      operation_type,
-      vat_rate,
+      purchase_date,
+      warehouse_id,
+      supplier_id,
+      client_id,
+      currency,
+      total_amount,
       vat_amount,
+      vat_rate,
+      products,
     } = req.body;
 
-    await pool.query("BEGIN");
-
-    const purchaseResult = await pool.query(
+    const result = await pool.query(
       `
       INSERT INTO purchases 
-      (product_code, product_name, quantity, price_per_unit, total_amount, 
-       supplier, currency, document_date, invoice_number, operation_type,
-       vat_rate, vat_amount)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+      (invoice_type, invoice_number, purchase_date, warehouse_id, supplier_id, client_id, currency, total_amount, vat_amount, vat_rate, products)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `,
       [
-        product_code,
-        product_name,
-        quantity,
-        price_per_unit,
-        total_amount,
-        supplier,
-        currency,
-        document_date,
+        invoice_type,
         invoice_number,
-        operation_type,
-        vat_rate,
+        purchase_date,
+        warehouse_id,
+        supplier_id,
+        client_id,
+        currency,
+        total_amount,
         vat_amount,
+        vat_rate,
+        JSON.stringify(products),
       ]
     );
 
-    await pool.query(
-      `
-      UPDATE products 
-      SET quantity = quantity + $1,
-          last_purchase_price = $2
-      WHERE product_code = $3
-    `,
-      [quantity, price_per_unit, product_code]
-    );
-
-    await pool.query("COMMIT");
-    res.status(201).json(purchaseResult.rows[0]);
+    res.status(201).json(result.rows[0]);
   } catch (error) {
-    await pool.query("ROLLBACK");
     res.status(500).json({ error: error.message });
   }
 };
@@ -118,43 +100,41 @@ const updatePurchase = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      product_code,
-      product_name,
-      quantity,
-      price_per_unit,
-      total_amount,
-      supplier,
-      currency,
-      document_date,
+      invoice_type,
       invoice_number,
-      operation_type,
-      vat_rate,
+      purchase_date,
+      warehouse_id,
+      supplier_id,
+      client_id,
+      currency,
+      total_amount,
       vat_amount,
+      vat_rate,
+      products,
     } = req.body;
 
     const result = await pool.query(
       `
       UPDATE purchases 
-      SET product_code = $1, product_name = $2, quantity = $3,
-          price_per_unit = $4, total_amount = $5, supplier = $6,
-          currency = $7, document_date = $8, invoice_number = $9,
-          operation_type = $10, vat_rate = $11, vat_amount = $12
-      WHERE id = $13 
+      SET invoice_type = $1, invoice_number = $2, purchase_date = $3,
+          warehouse_id = $4, supplier_id = $5, client_id = $6,
+          currency = $7, total_amount = $8, vat_amount = $9,
+          vat_rate = $10, products = $11
+      WHERE id = $12 
       RETURNING *
     `,
       [
-        product_code,
-        product_name,
-        quantity,
-        price_per_unit,
-        total_amount,
-        supplier,
-        currency,
-        document_date,
+        invoice_type,
         invoice_number,
-        operation_type,
-        vat_rate,
+        purchase_date,
+        warehouse_id,
+        supplier_id,
+        client_id,
+        currency,
+        total_amount,
         vat_amount,
+        vat_rate,
+        products,
         id,
       ]
     );
