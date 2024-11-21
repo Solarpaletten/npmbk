@@ -13,6 +13,7 @@ const getSales = async (req, res) => {
         sales.invoice_number,
         sales.invoice_type,
         sales.vat_rate,
+        sales.vat_amount,
         sales.total_amount,
         sales.currency,
         sales.created_at

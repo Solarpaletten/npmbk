@@ -2,10 +2,29 @@ const pool = require("../db");
 
 const getPurchases = async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT * FROM purchases 
-      ORDER BY created_at DESC
-    `);
+    // TODO add search/sort
+    const query = `
+        SELECT 
+          purchases.id,
+          purchases.purchase_date,
+          clients.name AS client,     
+          warehouse.name AS warehouse, 
+          supplier.name AS supplier,        
+          purchases.invoice_number,
+          purchases.invoice_type,
+          purchases.vat_rate,
+          purchases.vat_amount,
+          purchases.total_amount,
+          purchases.currency,
+          purchases.created_at
+        FROM purchases
+        JOIN clients ON purchases.client_id = clients.id         
+        JOIN warehouse ON purchases.warehouse_id = warehouse.id
+        JOIN clients AS supplier ON purchases.supplier_id = supplier.id 
+        ORDER BY purchases.created_at DESC;
+      `;
+
+    const result = await pool.query(query);
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
