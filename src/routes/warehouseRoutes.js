@@ -13,7 +13,6 @@ const {
   updateSale,
   deleteSale,
 } = require("../controllers/saleController");
-
 const router = express.Router();
 
 router.get("/purchases", getPurchases);

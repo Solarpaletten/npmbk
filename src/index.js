@@ -10,6 +10,8 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const warehouseRoutes = require("./routes/warehouseRoutes");
+const warehousesRoutes = require("./routes/warehousesRoutes");
+
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
@@ -19,10 +21,12 @@ app.use(express.json());
 
 // API Routes
 app.use("/api/clients", authMiddleware, clientRoutes);
+app.use("/api/warehouses", authMiddleware, warehousesRoutes);
 app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/products", authMiddleware, productRoutes);
 app.use("/api/warehouse", authMiddleware, warehouseRoutes);
+
 app.use("/api/auth", authRoutes);
 
 // Root endpoint
