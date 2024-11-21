@@ -36,45 +36,50 @@ const registerUser = async (req, res) => {
   const role = req.body.role || "standard";
   const hashedPassword = await bcrypt.hash(password, 10);
 
+  const client = await pool.connect();
+
   try {
-    // TODO: need to wrap in transaction
+    await client.query("BEGIN");
+
     const {
       rows: [user],
-    } = await pool.query(
+    } = await client.query(
       "INSERT INTO users (username, email, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
       [username, email, role, hashedPassword]
     );
 
     const {
-      rows: [client],
-    } = await pool.query(
+      rows: [clientData],
+    } = await client.query(
       `
       INSERT INTO clients 
         (name, email, phone, code, vat_code, created_by)
       VALUES 
         ($1, $2, $3, $4, $5, $6) 
       RETURNING *`,
-      ["Client 1", user.email, null, null, null, user.id]
+      [`${user.username} Company`, user.email, null, null, null, user.id]
     );
 
-
-    await pool.query()
-    
     const {
       rows: [warehouse],
-    } = await pool.query(
+    } = await client.query(
       `
-      INSERT INTO warehouse 
-        (name, company_id, location, responsible_person_id, status)
+      INSERT INTO warehouses 
+        (name, company_id, responsible_person_id)
       VALUES 
-        ($1, $2, $3, $4, $5) 
+        ($1, $2, $3) 
       RETURNING *`,
-      ["Warehouse 1", client.id, null, user.id, "Active"]
+      ["Main Warehouse", clientData.id, user.id]
     );
 
-    res.status(201).json({ user, client, warehouse });
+    await client.query("COMMIT");
+
+    res.status(201).json({ user, client: clientData, warehouse });
   } catch (error) {
+    await client.query("ROLLBACK");
     res.status(500).json({ error: error.message });
+  } finally {
+    client.release();
   }
 };
 
