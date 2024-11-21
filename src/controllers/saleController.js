@@ -32,8 +32,9 @@ const getSales = async (req, res) => {
 };
 
 const getSale = async (req, res) => {
+  const { id } = req.params;
+
   try {
-    const { id } = req.params;
     const result = await pool.query("SELECT * FROM sales WHERE id = $1", [id]);
 
     if (result.rows.length === 0) {
@@ -64,8 +65,8 @@ const createSale = async (req, res) => {
 
     const result = await pool.query(
       `
-      INSERT INTO purchases 
-      (invoice_type, invoice_number, purchase_date, warehouse_id, supplier_id, client_id, currency, total_amount, vat_amount, vat_rate, products)
+      INSERT INTO sales 
+      (invoice_type, invoice_number, sale_date, warehouse_id, buyer_id, client_id, currency, total_amount, vat_amount, vat_rate, products)
       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
     `,
@@ -91,22 +92,22 @@ const createSale = async (req, res) => {
 };
 
 const updateSale = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const {
-      invoice_type,
-      invoice_number,
-      sale_date,
-      warehouse_id,
-      buyer_id,
-      client_id,
-      currency,
-      total_amount,
-      vat_amount,
-      vat_rate,
-      products,
-    } = req.body;
+  const { id } = req.params;
+  const {
+    invoice_type,
+    invoice_number,
+    sale_date,
+    warehouse_id,
+    buyer_id,
+    client_id,
+    currency,
+    total_amount,
+    vat_amount,
+    vat_rate,
+    products,
+  } = req.body;
 
+  try {
     const result = await pool.query(
       `
       UPDATE purchases 
@@ -144,8 +145,10 @@ const updateSale = async (req, res) => {
 };
 
 const deleteSale = async (req, res) => {
+  console.log('jhjjjjjj')
+  const { id } = req.params;
+  console.log(id, "0000");
   try {
-    const { id } = req.params;
     const result = await pool.query(
       "DELETE FROM sales WHERE id = $1 RETURNING *",
       [id]
@@ -155,7 +158,7 @@ const deleteSale = async (req, res) => {
       return res.status(404).json({ error: "Sale not found" });
     }
 
-    res.status(200).json(result.rows[0]);
+    res.json({ message: "Sale deleted" });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

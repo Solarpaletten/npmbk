@@ -30,6 +30,7 @@ const getUsers = async (req, res) => {
 
 const getUser = async (req, res) => {
   const { id } = req.params;
+
   try {
     const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
     if (result.rows.length === 0) {
@@ -61,6 +62,7 @@ const createUser = async (req, res) => {
 const updateUser = async (req, res) => {
   const { id } = req.params;
   const { username, email, role } = req.body;
+
   try {
     const result = await pool.query(
       "UPDATE users SET username = $1, email = $2, role = $3 WHERE id = $4 RETURNING *",
@@ -77,14 +79,17 @@ const updateUser = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   const { id } = req.params;
+
   try {
     const result = await pool.query(
       "DELETE FROM users WHERE id = $1 RETURNING *",
       [id]
     );
+    
     if (result.rows.length === 0) {
       return res.status(404).json({ message: "User not found" });
     }
+
     res.json({ message: "User deleted" });
   } catch (error) {
     res.status(500).json({ error: error.message });
