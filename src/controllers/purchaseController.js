@@ -24,7 +24,7 @@ const getPurchase = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Поступление не найдено" });
+      return res.status(404).json({ error: "Purchase not found" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -141,7 +141,7 @@ const updatePurchase = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Поступление не найдено" });
+      return res.status(404).json({ error: "Purchase not found" });
     }
 
     res.status(200).json(result.rows[0]);
@@ -163,7 +163,7 @@ const deletePurchase = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: "Поступление не найдено" });
+      return res.status(404).json({ error: "Purchase not found" });
     }
 
     res.status(200).json(result.rows[0]);

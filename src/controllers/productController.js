@@ -43,7 +43,7 @@ const getProduct = async (req, res) => {
     ]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Товар не найден" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
     res.json(result.rows[0]);
@@ -76,7 +76,7 @@ const updateProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Товар не найден" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
     res.json(result.rows[0]);
@@ -94,10 +94,10 @@ const deleteProduct = async (req, res) => {
     );
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Товар не найден" });
+      return res.status(404).json({ message: "Product not found" });
     }
 
-    res.json({ message: "Товар успешно удален" });
+    res.json({ message: "Product deleted" });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
