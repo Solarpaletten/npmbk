@@ -5,6 +5,7 @@ const getSales = async (req, res) => {
     // TODO add search/sort
     const query = `
       SELECT 
+        sales.id,
         sales.sale_date,
         clients.name AS client,     
         warehouse.name AS warehouse, 
