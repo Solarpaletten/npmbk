@@ -145,9 +145,8 @@ const updateSale = async (req, res) => {
 };
 
 const deleteSale = async (req, res) => {
-  console.log('jhjjjjjj')
   const { id } = req.params;
-  console.log(id, "0000");
+
   try {
     const result = await pool.query(
       "DELETE FROM sales WHERE id = $1 RETURNING *",

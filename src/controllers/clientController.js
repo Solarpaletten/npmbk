@@ -1,9 +1,9 @@
 const pool = require("../db");
 
 const getClients = async (req, res) => {
-  console.log(req)
+  const userId = req.user.userId;
+
   try {
-    const userId = req.user.userId;
     const {
       rows: [user],
     } = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
@@ -14,13 +14,13 @@ const getClients = async (req, res) => {
         users.username AS created_by_name 
       FROM clients 
       JOIN users 
-        ON clients.created_by = users.id
+        ON clients.user_id = users.id
     `;
 
     const queryParams = [];
 
     if (user.role !== "admin") {
-      queryString += ` WHERE clients.created_by = $1`;
+      queryString += ` WHERE clients.user_id = $1`;
       queryParams.push(userId);
     }
 
@@ -62,7 +62,7 @@ const createClient = async (req, res) => {
 
     const query = `
       INSERT INTO clients 
-        (name, email, phone, code, vat_code, created_by) 
+        (name, email, phone, code, vat_code, user_id) 
       VALUES 
         ($1, $2, $3, $4, $5, $6) 
       RETURNING *`;
@@ -72,11 +72,7 @@ const createClient = async (req, res) => {
 
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    res.status(500).json({
-      message: "Error creating client",
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -129,9 +125,9 @@ const copyClient = async (req, res) => {
 
     const query = `
       INSERT INTO clients 
-        (name, email, phone, code, vat_code) 
+        (name, email, phone, code, vat_code, user_id) 
       VALUES 
-        ($1, $2, $3, $4, $5) 
+        ($1, $2, $3, $4, $5, $6) 
       RETURNING *`;
 
     const values = [
@@ -140,6 +136,7 @@ const copyClient = async (req, res) => {
       client.phone,
       client.code,
       client.vat_code,
+      client.user_id,
     ];
 
     const result = await pool.query(query, values);

@@ -53,7 +53,7 @@ const registerUser = async (req, res) => {
     } = await client.query(
       `
       INSERT INTO clients 
-        (name, email, phone, code, vat_code, created_by)
+        (name, email, phone, code, vat_code, user_id)
       VALUES 
         ($1, $2, $3, $4, $5, $6) 
       RETURNING *`,
@@ -65,11 +65,11 @@ const registerUser = async (req, res) => {
     } = await client.query(
       `
       INSERT INTO warehouses 
-        (name, company_id, responsible_person_id)
+        (name, company_id, responsible_person_id, user_id)
       VALUES 
-        ($1, $2, $3) 
+        ($1, $2, $3, $4) 
       RETURNING *`,
-      ["Main Warehouse", clientData.id, user.id]
+      ["Main Warehouse", clientData.id, user.id, user.id]
     );
 
     await client.query("COMMIT");

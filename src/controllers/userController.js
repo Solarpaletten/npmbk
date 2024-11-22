@@ -52,7 +52,6 @@ const getUser = async (req, res) => {
       rows: [client],
     } = await pool.query("SELECT * FROM clients WHERE created_by = $1", [user.id]);
 
-    console.log(client, '00000')
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
     }
