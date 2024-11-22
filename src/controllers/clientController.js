@@ -4,27 +4,17 @@ const getClients = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const {
-      rows: [user],
-    } = await pool.query("SELECT * FROM users WHERE id = $1", [userId]);
-
-    let queryString = `
+    const queryString = `
       SELECT 
         clients.*, 
         users.username AS created_by_name 
       FROM clients 
       JOIN users 
         ON clients.user_id = users.id
+      WHERE clients.user_id = $1
     `;
 
-    const queryParams = [];
-
-    if (user.role !== "admin") {
-      queryString += ` WHERE clients.user_id = $1`;
-      queryParams.push(userId);
-    }
-
-    const result = await pool.query(queryString, queryParams);
+    const result = await pool.query(queryString, [userId]);
 
     res.json(result.rows);
   } catch (error) {
