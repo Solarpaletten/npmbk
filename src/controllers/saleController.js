@@ -1,6 +1,8 @@
 const pool = require("../db");
 
 const getSales = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
     // TODO add search/sort
     const query = `
@@ -21,10 +23,11 @@ const getSales = async (req, res) => {
       JOIN clients ON sales.client_id = clients.id         
       JOIN warehouses ON sales.warehouse_id = warehouses.id
       JOIN clients AS buyer ON sales.buyer_id = buyer.id 
+      WHERE sales.user_id = $1
       ORDER BY sales.created_at DESC;
     `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [userId]);
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -48,6 +51,8 @@ const getSale = async (req, res) => {
 };
 
 const createSale = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
     const {
       invoice_type,
@@ -66,8 +71,8 @@ const createSale = async (req, res) => {
     const result = await pool.query(
       `
       INSERT INTO sales 
-      (invoice_type, invoice_number, sale_date, warehouse_id, buyer_id, client_id, currency, total_amount, vat_amount, vat_rate, products)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      (invoice_type, invoice_number, sale_date, warehouse_id, buyer_id, client_id, currency, total_amount, vat_amount, vat_rate, products, user_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `,
       [
@@ -82,6 +87,7 @@ const createSale = async (req, res) => {
         vat_amount,
         vat_rate,
         JSON.stringify(products),
+        userId,
       ]
     );
 
@@ -145,9 +151,8 @@ const updateSale = async (req, res) => {
 };
 
 const deleteSale = async (req, res) => {
-  console.log('jhjjjjjj')
   const { id } = req.params;
-  console.log(id, "0000");
+
   try {
     const result = await pool.query(
       "DELETE FROM sales WHERE id = $1 RETURNING *",

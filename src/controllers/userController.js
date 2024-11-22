@@ -3,6 +3,14 @@ const bcrypt = require("bcryptjs");
 
 const getUsers = async (req, res) => {
   try {
+    const userId = req.user.userId;
+    const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [
+      userId,
+    ]);
+    const role = rows[0].role;
+
+    if (role !== "admin") throw new Error({ message: "Access denied" });
+
     const { search = "", sort = "username", order = "ASC" } = req.query;
 
     const searchQuery = `%${search}%`;
@@ -32,11 +40,23 @@ const getUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
-    if (result.rows.length === 0) {
+    const {
+      rows: [user],
+    } = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+
+    if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(result.rows[0]);
+
+    const {
+      rows: [client],
+    } = await pool.query("SELECT * FROM clients WHERE created_by = $1", [user.id]);
+
+    if (!client) {
+      return res.status(404).json({ message: "Client not found" });
+    }
+
+    res.json({ ...user, ...client });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -53,6 +73,7 @@ const createUser = async (req, res) => {
       "INSERT INTO users (username, email, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
       [username, email, role, hashedPassword]
     );
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
     res.status(500).json({ error: error });

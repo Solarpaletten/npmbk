@@ -1,8 +1,21 @@
 const pool = require("../db");
 
 const getClients = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
-    const result = await pool.query("SELECT * FROM clients");
+    const queryString = `
+      SELECT 
+        clients.*, 
+        users.username AS created_by_name 
+      FROM clients 
+      JOIN users 
+        ON clients.user_id = users.id
+      WHERE clients.user_id = $1
+    `;
+
+    const result = await pool.query(queryString, [userId]);
+
     res.json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -25,12 +38,10 @@ const getClient = async (req, res) => {
 };
 
 const createClient = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
-    console.log("Received request body:", req.body);
-
     const { name, email, phone, code = null, vat_code = null } = req.body;
-
-    console.log("Processed data:", { name, email, phone, code, vat_code });
 
     if (!name || !email || !phone) {
       return res.status(400).json({
@@ -41,23 +52,17 @@ const createClient = async (req, res) => {
 
     const query = `
       INSERT INTO clients 
-        (name, email, phone, code, vat_code) 
+        (name, email, phone, code, vat_code, user_id) 
       VALUES 
-        ($1, $2, $3, $4, $5) 
+        ($1, $2, $3, $4, $5, $6) 
       RETURNING *`;
 
-    const values = [name, email, phone, code, vat_code];
-    console.log("Query values:", values);
-
+    const values = [name, email, phone, code, vat_code, userId];
     const result = await pool.query(query, values);
+
     res.status(201).json(result.rows[0]);
   } catch (error) {
-    console.error("Error in createClient:", error);
-    res.status(500).json({
-      message: "Error creating client",
-      error: error.message,
-      stack: process.env.NODE_ENV === "development" ? error.stack : undefined,
-    });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -97,21 +102,22 @@ const deleteClient = async (req, res) => {
 const copyClient = async (req, res) => {
   const { id } = req.params;
   try {
-    // Получаем клиента для копирования
-    const sourceClient = await pool.query('SELECT * FROM clients WHERE id = $1', [id]);
+    const sourceClient = await pool.query(
+      "SELECT * FROM clients WHERE id = $1",
+      [id]
+    );
 
     if (sourceClient.rows.length === 0) {
-      return res.status(404).json({ message: 'Client not found' });
+      return res.status(404).json({ message: "Client not found" });
     }
 
     const client = sourceClient.rows[0];
 
-    // Создаём копию с пометкой
     const query = `
       INSERT INTO clients 
-        (name, email, phone, code, vat_code) 
+        (name, email, phone, code, vat_code, user_id) 
       VALUES 
-        ($1, $2, $3, $4, $5) 
+        ($1, $2, $3, $4, $5, $6) 
       RETURNING *`;
 
     const values = [
@@ -120,6 +126,7 @@ const copyClient = async (req, res) => {
       client.phone,
       client.code,
       client.vat_code,
+      client.user_id,
     ];
 
     const result = await pool.query(query, values);
