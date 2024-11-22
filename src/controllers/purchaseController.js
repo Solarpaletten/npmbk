@@ -1,6 +1,8 @@
 const pool = require("../db");
 
 const getPurchases = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
     // TODO add search/sort
     const query = `
@@ -21,10 +23,11 @@ const getPurchases = async (req, res) => {
         JOIN clients ON purchases.client_id = clients.id         
         JOIN warehouses ON purchases.warehouse_id = warehouses.id
         JOIN clients AS supplier ON purchases.supplier_id = supplier.id 
+        WHERE purchases.user_id = $1
         ORDER BY purchases.created_at DESC;
       `;
 
-    const result = await pool.query(query);
+    const result = await pool.query(query, [userId]);
     res.status(200).json(result.rows);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -53,6 +56,8 @@ const getPurchase = async (req, res) => {
 };
 
 const createPurchase = async (req, res) => {
+  const userId = req.user.userId;
+
   try {
     const {
       invoice_type,
@@ -71,8 +76,8 @@ const createPurchase = async (req, res) => {
     const result = await pool.query(
       `
       INSERT INTO purchases 
-      (invoice_type, invoice_number, purchase_date, warehouse_id, supplier_id, client_id, currency, total_amount, vat_amount, vat_rate, products)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      (invoice_type, invoice_number, purchase_date, warehouse_id, supplier_id, client_id, currency, total_amount, vat_amount, vat_rate, products, user_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
       RETURNING *
     `,
       [
@@ -87,6 +92,7 @@ const createPurchase = async (req, res) => {
         vat_amount,
         vat_rate,
         JSON.stringify(products),
+        userId,
       ]
     );
 

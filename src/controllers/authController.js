@@ -53,11 +53,11 @@ const registerUser = async (req, res) => {
     } = await client.query(
       `
       INSERT INTO clients 
-        (name, email, phone, code, vat_code, user_id)
+        (name, email, phone, code, vat_code, user_id, is_main)
       VALUES 
-        ($1, $2, $3, $4, $5, $6) 
+        ($1, $2, $3, $4, $5, $6, $7) 
       RETURNING *`,
-      [`${user.username} Company`, user.email, null, null, null, user.id]
+      [`${user.username} Company`, user.email, null, null, null, user.id, true]
     );
 
     const {
