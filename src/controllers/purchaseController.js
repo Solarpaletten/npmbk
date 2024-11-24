@@ -9,16 +9,20 @@ const getPurchases = async (req, res) => {
         SELECT 
           purchases.id,
           purchases.purchase_date,
-          clients.name AS client,     
+          clients.name AS client,   
+          purchases.client_id,  
           warehouses.name AS warehouse, 
-          supplier.name AS supplier,        
+          purchases.warehouse_id,
+          supplier.name AS supplier,
+          purchases.supplier_id,        
           purchases.invoice_number,
           purchases.invoice_type,
           purchases.vat_rate,
           purchases.vat_amount,
           purchases.total_amount,
           purchases.currency,
-          purchases.created_at
+          purchases.created_at,
+          purchases.products
         FROM purchases
         JOIN clients ON purchases.client_id = clients.id         
         JOIN warehouses ON purchases.warehouse_id = warehouses.id

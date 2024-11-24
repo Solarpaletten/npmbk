@@ -10,15 +10,19 @@ const getSales = async (req, res) => {
         sales.id,
         sales.sale_date,
         clients.name AS client,     
+        sales.client_id,
         warehouses.name AS warehouse, 
+        sales.warehouse_id,
         buyer.name AS buyer,        
+        sales.buyer_id,
         sales.invoice_number,
         sales.invoice_type,
         sales.vat_rate,
         sales.vat_amount,
         sales.total_amount,
         sales.currency,
-        sales.created_at
+        sales.created_at,
+        products
       FROM sales
       JOIN clients ON sales.client_id = clients.id         
       JOIN warehouses ON sales.warehouse_id = warehouses.id
