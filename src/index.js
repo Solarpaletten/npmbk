@@ -2,6 +2,8 @@ const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
 const authMiddleware = require("./middlewares/authMiddleware");
+ 
+
 
 dotenv.config();
 
@@ -11,7 +13,7 @@ const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const warehousesRoutes = require("./routes/warehousesRoutes");
-
+const payrollRoutes = require("./routes/payrollRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
@@ -26,7 +28,7 @@ app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/products", authMiddleware, productRoutes);
 app.use("/api/warehouse", authMiddleware, warehouseRoutes);
-
+app.use("/api/payroll", authMiddleware, payrollRoutes);
 app.use("/api/auth", authRoutes);
 
 // Root endpoint
