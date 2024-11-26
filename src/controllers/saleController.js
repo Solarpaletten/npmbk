@@ -120,7 +120,7 @@ const updateSale = async (req, res) => {
   try {
     const result = await pool.query(
       `
-      UPDATE purchases 
+      UPDATE sales 
       SET invoice_type = $1, invoice_number = $2, sale_date = $3,
           warehouse_id = $4, buyer_id = $5, client_id = $6,
           currency = $7, total_amount = $8, vat_amount = $9,
@@ -139,7 +139,7 @@ const updateSale = async (req, res) => {
         total_amount,
         vat_amount,
         vat_rate,
-        products,
+        JSON.stringify(products),
         id,
       ]
     );

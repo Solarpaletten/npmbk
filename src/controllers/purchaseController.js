@@ -144,7 +144,7 @@ const updatePurchase = async (req, res) => {
         total_amount,
         vat_amount,
         vat_rate,
-        products,
+        JSON.stringify(products),
         id,
       ]
     );
