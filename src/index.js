@@ -14,6 +14,7 @@ const productRoutes = require("./routes/productRoutes");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const warehousesRoutes = require("./routes/warehousesRoutes");
 const payrollRoutes = require("./routes/payrollRoutes");
+const generalLedgerRoutes = require("./routes/generalLedgerRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
@@ -29,6 +30,7 @@ app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/products", authMiddleware, productRoutes);
 app.use("/api/warehouse", authMiddleware, warehouseRoutes);
 app.use("/api/payroll", authMiddleware, payrollRoutes);
+app.use("/api/general-ledger", authMiddleware, generalLedgerRoutes);
 app.use("/api/auth", authRoutes);
 
 // Root endpoint
