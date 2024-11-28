@@ -1,4 +1,5 @@
 const express = require("express");
+const router = express.Router();
 const {
   getGeneralRegister,
   getGeneralLedger,
@@ -8,9 +9,6 @@ const {
   getChartOfAccounts
 } = require("../controllers/generalLedgerController");
 
-const router = express.Router();
-
-// Маршруты для главной книги
 router.get("/register", getGeneralRegister);
 router.get("/ledger", getGeneralLedger);
 router.get("/settlement", getDocSettlement);
