@@ -75,17 +75,18 @@ const createPayroll = async (req, res) => {
       tax_amount,
       insurance_amount,
       payment_status,
-      currency
+      currency,
     } = req.body;
 
-    // Вычисляем gross_salary и net_salary
-    const gross_salary = parseFloat(base_salary) + 
-                        parseFloat(bonus || 0) + 
-                        (parseFloat(overtime_hours || 0) * parseFloat(overtime_rate || 0));
-    
-    const net_salary = gross_salary - 
-                      parseFloat(tax_amount || 0) - 
-                      parseFloat(insurance_amount || 0);
+    const gross_salary =
+      parseFloat(base_salary) +
+      parseFloat(bonus || 0) +
+      parseFloat(overtime_hours || 0) * parseFloat(overtime_rate || 0);
+
+    const net_salary =
+      gross_salary -
+      parseFloat(tax_amount || 0) -
+      parseFloat(insurance_amount || 0);
 
     const result = await pool.query(
       `
@@ -110,7 +111,7 @@ const createPayroll = async (req, res) => {
         net_salary,
         payment_status,
         currency,
-        userId
+        userId,
       ]
     );
 
@@ -134,17 +135,18 @@ const updatePayroll = async (req, res) => {
       tax_amount,
       insurance_amount,
       payment_status,
-      currency
+      currency,
     } = req.body;
 
-    // Вычисляем gross_salary и net_salary
-    const gross_salary = parseFloat(base_salary) + 
-                        parseFloat(bonus || 0) + 
-                        (parseFloat(overtime_hours || 0) * parseFloat(overtime_rate || 0));
-    
-    const net_salary = gross_salary - 
-                      parseFloat(tax_amount || 0) - 
-                      parseFloat(insurance_amount || 0);
+    const gross_salary =
+      parseFloat(base_salary) +
+      parseFloat(bonus || 0) +
+      parseFloat(overtime_hours || 0) * parseFloat(overtime_rate || 0);
+
+    const net_salary =
+      gross_salary -
+      parseFloat(tax_amount || 0) -
+      parseFloat(insurance_amount || 0);
 
     const result = await pool.query(
       `
@@ -171,7 +173,7 @@ const updatePayroll = async (req, res) => {
         net_salary,
         payment_status,
         currency,
-        id
+        id,
       ]
     );
 
