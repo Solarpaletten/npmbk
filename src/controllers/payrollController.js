@@ -12,6 +12,7 @@ const getPayrolls = async (req, res) => {
           users.email AS employee_email,
           users.username AS employee_name,
           employees.position AS employee_position,
+          payroll.employee_id,
           payroll.base_salary,
           payroll.bonus,
           payroll.overtime_hours,
@@ -27,7 +28,7 @@ const getPayrolls = async (req, res) => {
           payroll.updated_at
         FROM payroll
         JOIN employees ON payroll.employee_id = employees.id
-        JOIN users ON employees.user_id = users.id
+        JOIN users ON employees.ref_user_id = users.id
         WHERE payroll.created_by = $1
         ORDER BY payroll.created_at DESC;
     `;
