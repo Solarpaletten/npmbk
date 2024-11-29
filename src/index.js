@@ -3,8 +3,6 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const authMiddleware = require("./middlewares/authMiddleware");
  
-
-
 dotenv.config();
 
 const clientRoutes = require("./routes/clientRoutes");
@@ -15,6 +13,7 @@ const warehouseRoutes = require("./routes/warehouseRoutes");
 const warehousesRoutes = require("./routes/warehousesRoutes");
 const payrollRoutes = require("./routes/payrollRoutes");
 const generalLedgerRoutes = require("./routes/generalLedgerRoutes");
+const employeeRoutes = require("./routes/employeeRoutes");
 const authRoutes = require("./routes/authRoutes");
 
 const app = express();
@@ -30,6 +29,7 @@ app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/products", authMiddleware, productRoutes);
 app.use("/api/warehouse", authMiddleware, warehouseRoutes);
 app.use("/api/payroll", authMiddleware, payrollRoutes);
+app.use("/api/employees", authMiddleware, employeeRoutes);
 app.use("/api/general-ledger", authMiddleware, generalLedgerRoutes);
 app.use("/api/auth", authRoutes);
 
