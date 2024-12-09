@@ -11,6 +11,7 @@ const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const warehouseRoutes = require("./routes/warehouseRoutes");
 const warehousesRoutes = require("./routes/warehousesRoutes");
+const bankOperationsRoutes = require("./routes/bankOperationsRoutes");
 const payrollRoutes = require("./routes/payrollRoutes");
 const generalLedgerRoutes = require("./routes/generalLedgerRoutes");
 const employeeRoutes = require("./routes/employeeRoutes");
@@ -24,6 +25,7 @@ app.use(express.json());
 // API Routes
 app.use("/api/clients", authMiddleware, clientRoutes);
 app.use("/api/warehouses", authMiddleware, warehousesRoutes);
+app.use("/api/bank/operations", authMiddleware, bankOperationsRoutes);
 app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/products", authMiddleware, productRoutes);
