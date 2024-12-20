@@ -1,218 +1,181 @@
-// controllers/chartOfAccountsController.js
 const pool = require("../db");
 
 const getAccounts = async (req, res) => {
-  const companyAccountId = req.user.companyAccountId;
-
   try {
     const queryString = `
-      SELECT 
-        chart_of_accounts.*, 
-        company_accounts.company_name
-      FROM chart_of_accounts 
-      JOIN company_accounts ON chart_of_accounts.company_account_id = company_accounts.id
-      WHERE chart_of_accounts.company_account_id = $1
-      ORDER BY chart_of_accounts.code
+      SELECT * FROM chart_of_accounts 
+      ORDER BY code
     `;
 
-    const result = await pool.query(queryString, [companyAccountId]);
+    const result = await pool.query(queryString);
     res.json(result.rows);
   } catch (error) {
+    console.error('Error getting accounts:', error);
     res.status(500).json({ error: error.message });
   }
 };
 
 const getAccount = async (req, res) => {
-  const { id } = req.params;
-  const companyAccountId = req.user.companyAccountId;
+ const { id } = req.params;
 
-  try {
-    const result = await pool.query(
-      `SELECT chart_of_accounts.*, company_accounts.company_name
-       FROM chart_of_accounts 
-       JOIN company_accounts ON chart_of_accounts.company_account_id = company_accounts.id
-       WHERE chart_of_accounts.id = $1 AND chart_of_accounts.company_account_id = $2`,
-      [id, companyAccountId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Account not found" });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+ try {
+   const result = await pool.query(
+     "SELECT * FROM chart_of_accounts WHERE id = $1",
+     [id]
+   );
+   
+   if (result.rows.length === 0) {
+     return res.status(404).json({ message: "Account not found" });
+   }
+   res.json(result.rows[0]);
+ } catch (error) {
+   console.error('Error getting account:', error);
+   res.status(500).json({ error: error.message });
+ }
 };
 
 const createAccount = async (req, res) => {
-  // Получаем ID компании из пользовательской сессии
-  const companyId = req.user.companyId;
+ try {
+   const { 
+     code, 
+     name, 
+     account_type = null, 
+     parent_code = null,
+     is_active = true
+   } = req.body;
 
-  if (!companyId) {
-    return res.status(400).json({ error: 'Company ID is required' });
-  }
+   if (!code || !name) {
+     return res.status(400).json({
+       message: "Code and name are required",
+       received: { code, name },
+     });
+   }
 
-  try {
-    console.log('Creating account for company:', companyId);
-    
-    const { 
-      code, 
-      name, 
-      account_type = null, 
-      parent_id = null,
-      is_reserve = false,
-      is_advance = false,
-      cost_center = null,
-      text = null,
-      is_active = true
-    } = req.body;
+   const query = `
+     INSERT INTO chart_of_accounts 
+       (code, name, account_type, parent_code, is_active) 
+     VALUES 
+       ($1, $2, $3, $4, $5) 
+     RETURNING *`;
 
-    const query = `
-      INSERT INTO chart_of_accounts 
-        (code, name, account_type, parent_id, is_reserve, is_advance, 
-         cost_center, text, is_active, company_id) 
-      VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-      RETURNING *`;
+   const values = [code, name, account_type, parent_code, is_active];
 
-    const values = [
-      code, 
-      name, 
-      account_type, 
-      parent_id,
-      is_reserve,
-      is_advance,
-      cost_center,
-      text,
-      is_active,
-      companyId
-    ];
+   console.log('Creating account:', values);
+   const result = await pool.query(query, values);
+   console.log('Created account:', result.rows[0]);
 
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    console.error('Error creating account:', error);
-    res.status(500).json({ error: error.message });
-  }
+   res.status(201).json(result.rows[0]);
+ } catch (error) {
+   console.error('Error creating account:', error);
+   res.status(500).json({ error: error.message });
+ }
 };
 
 const updateAccount = async (req, res) => {
-  const { id } = req.params;
-  const companyAccountId = req.user.companyAccountId;
+ const { id } = req.params;
 
-  try {
-    const { 
-      code, 
-      name, 
-      account_type,
-      parent_id,
-      is_reserve,
-      is_advance,
-      cost_center,
-      text,
-      is_active 
-    } = req.body;
+ try {
+   const { 
+     code, 
+     name, 
+     account_type,
+     parent_code,
+     is_active 
+   } = req.body;
 
-    const result = await pool.query(
-      `UPDATE chart_of_accounts 
-       SET code = $1, name = $2, account_type = $3, parent_id = $4,
-           is_reserve = $5, is_advance = $6, cost_center = $7,
-           text = $8, is_active = $9
-       WHERE id = $10 AND company_account_id = $11
-       RETURNING *`,
-      [code, name, account_type, parent_id, is_reserve, is_advance,
-       cost_center, text, is_active, id, companyAccountId]
-    );
+   const result = await pool.query(
+     `UPDATE chart_of_accounts 
+      SET code = $1, name = $2, account_type = $3, parent_code = $4,
+          is_active = $5
+      WHERE id = $6 
+      RETURNING *`,
+     [code, name, account_type, parent_code, is_active, id]
+   );
 
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Account not found" });
-    }
-    res.json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+   if (result.rows.length === 0) {
+     return res.status(404).json({ message: "Account not found" });
+   }
+   res.json(result.rows[0]);
+ } catch (error) {
+   console.error('Error updating account:', error);
+   res.status(500).json({ error: error.message });
+ }
 };
 
 const deleteAccount = async (req, res) => {
-  const { id } = req.params;
-  const companyAccountId = req.user.companyAccountId;
+ const { id } = req.params;
 
-  try {
-    // Проверяем, есть ли дочерние счета
-    const childAccounts = await pool.query(
-      "SELECT id FROM chart_of_accounts WHERE parent_id = $1 AND company_account_id = $2",
-      [id, companyAccountId]
-    );
+ try {
+   // Проверяем наличие дочерних счетов
+   const childAccounts = await pool.query(
+     "SELECT id FROM chart_of_accounts WHERE parent_code = $1",
+     [id]
+   );
 
-    if (childAccounts.rows.length > 0) {
-      return res.status(400).json({ 
-        message: "Cannot delete account with child accounts" 
-      });
-    }
+   if (childAccounts.rows.length > 0) {
+     return res.status(400).json({ 
+       message: "Cannot delete account with child accounts" 
+     });
+   }
 
-    const result = await pool.query(
-      "DELETE FROM chart_of_accounts WHERE id = $1 AND company_account_id = $2 RETURNING *",
-      [id, companyAccountId]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Account not found" });
-    }
-    res.json({ message: "Account deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+   const result = await pool.query(
+     "DELETE FROM chart_of_accounts WHERE id = $1 RETURNING *",
+     [id]
+   );
+   
+   if (result.rows.length === 0) {
+     return res.status(404).json({ message: "Account not found" });
+   }
+   res.json({ message: "Account deleted successfully" });
+ } catch (error) {
+   console.error('Error deleting account:', error);
+   res.status(500).json({ error: error.message });
+ }
 };
 
 const copyAccount = async (req, res) => {
-  const { id } = req.params;
-  const companyAccountId = req.user.companyAccountId;
+ const { id } = req.params;
 
-  try {
-    const sourceAccount = await pool.query(
-      "SELECT * FROM chart_of_accounts WHERE id = $1 AND company_account_id = $2",
-      [id, companyAccountId]
-    );
+ try {
+   const sourceAccount = await pool.query(
+     "SELECT * FROM chart_of_accounts WHERE id = $1",
+     [id]
+   );
 
-    if (sourceAccount.rows.length === 0) {
-      return res.status(404).json({ message: "Account not found" });
-    }
+   if (sourceAccount.rows.length === 0) {
+     return res.status(404).json({ message: "Account not found" });
+   }
 
-    const account = sourceAccount.rows[0];
+   const account = sourceAccount.rows[0];
 
-    const query = `
-      INSERT INTO chart_of_accounts 
-        (code, name, account_type, parent_id, is_reserve, is_advance,
-         cost_center, text, is_active, company_account_id) 
-      VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) 
-      RETURNING *`;
+   const query = `
+     INSERT INTO chart_of_accounts 
+       (code, name, account_type, parent_code, is_active) 
+     VALUES 
+       ($1, $2, $3, $4, $5) 
+     RETURNING *`;
 
-    const values = [
-      `${account.code}_copy`,
-      `${account.name} (Copy)`,
-      account.account_type,
-      account.parent_id,
-      account.is_reserve,
-      account.is_advance,
-      account.cost_center,
-      account.text,
-      account.is_active,
-      companyAccountId
-    ];
+   const values = [
+     `${account.code}_copy`,
+     `${account.name} (Copy)`,
+     account.account_type,
+     account.parent_code,
+     account.is_active
+   ];
 
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
+   const result = await pool.query(query, values);
+   res.status(201).json(result.rows[0]);
+ } catch (error) {
+   console.error('Error copying account:', error);
+   res.status(500).json({ error: error.message });
+ }
 };
 
 module.exports = {
-  getAccounts,
-  getAccount,
-  createAccount,
-  updateAccount,
-  deleteAccount,
-  copyAccount,
+ getAccounts,
+ getAccount,
+ createAccount,
+ updateAccount,
+ deleteAccount,
+ copyAccount,
 };
