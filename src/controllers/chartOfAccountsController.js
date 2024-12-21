@@ -171,6 +171,46 @@ const copyAccount = async (req, res) => {
  }
 };
 
+const importAccounts = async (req, res) => {
+  try {
+    const accounts = req.body;
+    
+    if (!Array.isArray(accounts)) {
+      return res.status(400).json({ error: 'Invalid data format' });
+    }
+
+    const result = await pool.query(
+      `INSERT INTO chart_of_accounts 
+        (code, name, account_type, parent_code, is_active)
+       SELECT 
+        v.code,
+        v.name,
+        v.account_type,
+        v.parent_code,
+        COALESCE(v.is_active, true)
+       FROM jsonb_to_recordset($1::jsonb) AS v(
+        code VARCHAR(50),
+        name VARCHAR(255),
+        account_type VARCHAR(50),
+        parent_code VARCHAR(50),
+        is_active BOOLEAN
+       )
+       ON CONFLICT (code) DO UPDATE SET
+        name = EXCLUDED.name,
+        account_type = EXCLUDED.account_type,
+        parent_code = EXCLUDED.parent_code,
+        is_active = EXCLUDED.is_active
+       RETURNING *`,
+      [JSON.stringify(accounts)]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error importing accounts:', error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
  getAccounts,
  getAccount,
@@ -178,4 +218,5 @@ module.exports = {
  updateAccount,
  deleteAccount,
  copyAccount,
+ importAccounts,
 };
