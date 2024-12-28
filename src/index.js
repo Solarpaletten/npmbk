@@ -15,7 +15,7 @@ const clientRoutes = require("./routes/clientRoutes");
 const bankOperationsRoutes = require("./routes/bankOperationsRoutes");
 const saleRoutes = require("./routes/saleRoutes");
 const purchaseRoutes = require("./routes/purchaseRoutes");
-const warehousesRoutes = require("./routes/warehousesRoutes");
+// const warehousesRoutes = require("./routes/warehousesRoutes");
 const productRoutes = require("./routes/productRoutes");
 const chartOfAccountsRoutes = require("./routes/chartOfAccountsRoutes");
 const generalLedgerRoutes = require("./routes/generalLedgerRoutes");
@@ -34,20 +34,20 @@ app.use(express.json()); // Парсинг JSON
 // Публичные маршруты (без авторизации)
 app.use("/api/auth", authRoutes);
 
+
 // Защищенные маршруты (требуют авторизации)
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/clients", authMiddleware, clientRoutes);
-app.use("/api/bank-operations", authMiddleware, bankOperationsRoutes); // Исправлен путь
+app.use("/api/bank-operations", authMiddleware, bankOperationsRoutes);
 app.use("/api/sales", authMiddleware, saleRoutes);
 app.use("/api/purchases", authMiddleware, purchaseRoutes);
-app.use("/api/warehouses", authMiddleware, warehousesRoutes);
+// app.use("/api/warehouses", authMiddleware, warehousesRoutes);
 app.use("/api/products", authMiddleware, productRoutes);
 app.use("/api/chart-of-accounts", authMiddleware, chartOfAccountsRoutes);
 app.use("/api/general-ledger", authMiddleware, generalLedgerRoutes);
 app.use("/api/employees", authMiddleware, employeeRoutes);
 app.use("/api/payroll", authMiddleware, payrollRoutes);
-
 // Root endpoint
 app.get("/", (req, res) => {
   res.send("Welcome to the API!");
