@@ -1,5 +1,5 @@
-// bankOperationsRoutes.js
-const express = require("express");
+const express = require('express');
+const router = express.Router();
 const {
   getBankOperations,
   getBankOperation,
@@ -9,8 +9,7 @@ const {
   copyBankOperation,
 } = require('../controllers/bankOperationsController');
 
-const router = express.Router();
-
+// Маршруты остаются теми же
 router.get("/", getBankOperations);
 router.get("/:id", getBankOperation);
 router.post("/", createBankOperation);

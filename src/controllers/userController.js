@@ -1,36 +1,33 @@
-const pool = require("../db");
 const bcrypt = require("bcryptjs");
 
 const getUsers = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const { rows } = await pool.query("SELECT * FROM users WHERE id = $1", [
-      userId,
-    ]);
-    const role = rows[0].role;
 
-    if (role !== "admin") throw new Error({ message: "Access denied" });
+    // Проверяем роль текущего пользователя
+    const user = await req.prisma.users.findUnique({ where: { id: userId } });
+    if (!user || user.role !== "admin") {
+      return res.status(403).json({ message: "Access denied" });
+    }
 
-    const { search = "", sort = "username", order = "ASC" } = req.query;
+    // Получаем параметры запроса
+    const { search = "", sort = "username", order = "asc" } = req.query;
 
-    const searchQuery = `%${search}%`;
-    const sortColumn = ["username", "email", "role", "created_at"].includes(
-      sort
-    )
-      ? sort
-      : "username";
-    const sortOrder = order === "DESC" ? "DESC" : "ASC";
+    // Формируем фильтр поиска
+    const users = await req.prisma.users.findMany({
+      where: {
+        OR: [
+          { username: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { role: { contains: search, mode: "insensitive" } },
+        ],
+      },
+      orderBy: {
+        [sort]: order === "desc" ? "desc" : "asc",
+      },
+    });
 
-    const result = await pool.query(
-      `
-      SELECT * FROM users
-      WHERE username ILIKE $1 OR email ILIKE $1 OR role ILIKE $1
-      ORDER BY ${sortColumn} ${sortOrder}
-      `,
-      [searchQuery]
-    );
-
-    res.json(result.rows);
+    res.json(users);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -40,17 +37,19 @@ const getUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const {
-      rows: [user],
-    } = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+    // Получаем пользователя
+    const user = await req.prisma.users.findUnique({
+      where: { id: Number(id) },
+    });
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const {
-      rows: [client],
-    } = await pool.query("SELECT * FROM clients WHERE created_by = $1", [user.id]);
+    // Получаем клиента, связанного с пользователем
+    const client = await req.prisma.clients.findFirst({
+      where: { created_by: Number(user.id) },
+    });
 
     if (!client) {
       return res.status(404).json({ message: "Client not found" });
@@ -69,14 +68,18 @@ const createUser = async (req, res) => {
   const hashedPassword = await bcrypt.hash(password, 10);
 
   try {
-    const result = await pool.query(
-      "INSERT INTO users (username, email, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
-      [username, email, role, hashedPassword]
-    );
+    const newUser = await req.prisma.users.create({
+      data: {
+        username,
+        email,
+        role,
+        password_hash: hashedPassword,
+      },
+    });
 
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(newUser);
   } catch (error) {
-    res.status(500).json({ error: error });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -85,15 +88,16 @@ const updateUser = async (req, res) => {
   const { username, email, role } = req.body;
 
   try {
-    const result = await pool.query(
-      "UPDATE users SET username = $1, email = $2, role = $3 WHERE id = $4 RETURNING *",
-      [username, email, role, id]
-    );
-    if (result.rows.length === 0) {
+    const updatedUser = await req.prisma.users.update({
+      where: { id: Number(id) },
+      data: { username, email, role },
+    });
+
+    res.json(updatedUser);
+  } catch (error) {
+    if (error.code === "P2025") {
       return res.status(404).json({ message: "User not found" });
     }
-    res.json(result.rows[0]);
-  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
@@ -102,17 +106,13 @@ const deleteUser = async (req, res) => {
   const { id } = req.params;
 
   try {
-    const result = await pool.query(
-      "DELETE FROM users WHERE id = $1 RETURNING *",
-      [id]
-    );
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    await req.prisma.users.delete({ where: { id: Number(id) } });
 
     res.json({ message: "User deleted" });
   } catch (error) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ message: "User not found" });
+    }
     res.status(500).json({ error: error.message });
   }
 };

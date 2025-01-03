@@ -1,22 +1,29 @@
 // bankOperationsController.js
-const pool = require("../db");
 
 const getBankOperations = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const queryString = `
-      SELECT 
-        bank_operations.*, 
-        users.username AS created_by_name 
-      FROM bank_operations 
-      JOIN users 
-        ON bank_operations.user_id = users.id
-      WHERE bank_operations.user_id = $1
-    `;
+    const operations = await req.prisma.bank_operations.findMany({
+      where: {
+        user_id: userId
+      },
+      include: {
+        user: {
+          select: {
+            username: true
+          }
+        }
+      }
+    });
 
-    const result = await pool.query(queryString, [userId]);
-    res.json(result.rows);
+    // Преобразуем данные в тот же формат
+    const formattedOperations = operations.map(op => ({
+      ...op,
+      created_by_name: op.user.username
+    }));
+
+    res.json(formattedOperations);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -25,11 +32,16 @@ const getBankOperations = async (req, res) => {
 const getBankOperation = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query("SELECT * FROM bank_operations WHERE id = $1", [id]);
-    if (result.rows.length === 0) {
+    const operation = await req.prisma.bank_operations.findUnique({
+      where: {
+        id: Number(id)
+      }
+    });
+
+    if (!operation) {
       return res.status(404).json({ message: "Operation not found" });
     }
-    res.json(result.rows[0]);
+    res.json(operation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -56,17 +68,20 @@ const createBankOperation = async (req, res) => {
       });
     }
 
-    const query = `
-      INSERT INTO bank_operations 
-        (date, type, amount, client, description, account, corresponding_account, user_id) 
-      VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8) 
-      RETURNING *`;
+    const newOperation = await req.prisma.bank_operations.create({
+      data: {
+        date: new Date(date),
+        type,
+        amount: Number(amount),
+        client,
+        description,
+        account,
+        corresponding_account,
+        user_id: userId
+      }
+    });
 
-    const values = [date, type, amount, client, description, account, corresponding_account, userId];
-    const result = await pool.query(query, values);
-
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(newOperation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -85,20 +100,29 @@ const updateBankOperation = async (req, res) => {
   } = req.body;
 
   try {
-    const result = await pool.query(
-      `UPDATE bank_operations 
-       SET date = $1, type = $2, amount = $3, client = $4, description = $5, 
-           account = $6, corresponding_account = $7 
-       WHERE id = $8 
-       RETURNING *`,
-      [date, type, amount, client, description, account, corresponding_account, id]
-    );
+    const updatedOperation = await req.prisma.bank_operations.update({
+      where: {
+        id: Number(id)
+      },
+      data: {
+        date: new Date(date),
+        type,
+        amount: Number(amount),
+        client,
+        description,
+        account,
+        corresponding_account
+      }
+    });
     
-    if (result.rows.length === 0) {
+    if (!updatedOperation) {
       return res.status(404).json({ message: "Operation not found" });
     }
-    res.json(result.rows[0]);
+    res.json(updatedOperation);
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Operation not found" });
+    }
     res.status(500).json({ error: error.message });
   }
 };
@@ -106,15 +130,16 @@ const updateBankOperation = async (req, res) => {
 const deleteBankOperation = async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query(
-      "DELETE FROM bank_operations WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Operation not found" });
-    }
+    await req.prisma.bank_operations.delete({
+      where: {
+        id: Number(id)
+      }
+    });
     res.json({ message: "Operation deleted" });
   } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Operation not found" });
+    }
     res.status(500).json({ error: error.message });
   }
 };
@@ -122,37 +147,27 @@ const deleteBankOperation = async (req, res) => {
 const copyBankOperation = async (req, res) => {
   const { id } = req.params;
   try {
-    const sourceOperation = await pool.query(
-      "SELECT * FROM bank_operations WHERE id = $1",
-      [id]
-    );
+    const sourceOperation = await req.prisma.bank_operations.findUnique({
+      where: {
+        id: Number(id)
+      }
+    });
 
-    if (sourceOperation.rows.length === 0) {
+    if (!sourceOperation) {
       return res.status(404).json({ message: "Operation not found" });
     }
 
-    const operation = sourceOperation.rows[0];
+    // Создаем копию, исключая id
+    const { id: _, created_at, updated_at, ...operationData } = sourceOperation;
 
-    const query = `
-      INSERT INTO bank_operations 
-        (date, type, amount, client, description, account, corresponding_account, user_id) 
-      VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8) 
-      RETURNING *`;
+    const newOperation = await req.prisma.bank_operations.create({
+      data: {
+        ...operationData,
+        description: `${operationData.description || ''} (Copy)`,
+      }
+    });
 
-    const values = [
-      operation.date,
-      operation.type,
-      operation.amount,
-      operation.client,
-      `${operation.description} (Copy)`,
-      operation.account,
-      operation.corresponding_account,
-      operation.user_id
-    ];
-
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(newOperation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
