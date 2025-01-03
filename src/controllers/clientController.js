@@ -1,22 +1,27 @@
-const pool = require("../db");
+// clientsController.js
 
 const getClients = async (req, res) => {
   const userId = req.user.userId;
 
   try {
-    const queryString = `
-      SELECT 
-        clients.*, 
-        users.username AS created_by_name 
-      FROM clients 
-      JOIN users 
-        ON clients.user_id = users.id
-      WHERE clients.user_id = $1
-    `;
+    const clients = await req.prisma.clients.findMany({
+      where: { user_id: userId },
+      include: {
+        user: {
+          select: {
+            username: true,
+          },
+        },
+      },
+    });
 
-    const result = await pool.query(queryString, [userId]);
+    // Преобразуем данные для добавления поля `created_by_name`
+    const formattedClients = clients.map(client => ({
+      ...client,
+      created_by_name: client.user.username,
+    }));
 
-    res.json(result.rows);
+    res.json(formattedClients);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -24,14 +29,17 @@ const getClients = async (req, res) => {
 
 const getClient = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const result = await pool.query("SELECT * FROM clients WHERE id = $1", [
-      id,
-    ]);
-    if (result.rows.length === 0) {
+    const client = await req.prisma.clients.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!client) {
       return res.status(404).json({ message: "Client not found" });
     }
-    res.json(result.rows[0]);
+
+    res.json(client);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -45,22 +53,23 @@ const createClient = async (req, res) => {
 
     if (!name || !email || !phone) {
       return res.status(400).json({
-        message: "Name, email and phone are required",
+        message: "Name, email, and phone are required",
         received: { name, email, phone },
       });
     }
 
-    const query = `
-      INSERT INTO clients 
-        (name, email, phone, code, vat_code, user_id) 
-      VALUES 
-        ($1, $2, $3, $4, $5, $6) 
-      RETURNING *`;
+    const newClient = await req.prisma.clients.create({
+      data: {
+        name,
+        email,
+        phone,
+        code,
+        vat_code,
+        user_id: userId,
+      },
+    });
 
-    const values = [name, email, phone, code, vat_code, userId];
-    const result = await pool.query(query, values);
-
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(newClient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -69,68 +78,67 @@ const createClient = async (req, res) => {
 const updateClient = async (req, res) => {
   const { id } = req.params;
   const { name, email, phone, code, vat_code } = req.body;
+
   try {
-    const result = await pool.query(
-      "UPDATE clients SET name = $1, email = $2, phone = $3, code = $4, vat_code = $5 WHERE id = $6 RETURNING *",
-      [name, email, phone, code, vat_code, id]
-    );
-    if (result.rows.length === 0) {
+    const updatedClient = await req.prisma.clients.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        email,
+        phone,
+        code,
+        vat_code,
+      },
+    });
+
+    res.json(updatedClient);
+  } catch (error) {
+    if (error.code === "P2025") {
       return res.status(404).json({ message: "Client not found" });
     }
-    res.json(result.rows[0]);
-  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
 
 const deleteClient = async (req, res) => {
   const { id } = req.params;
+
   try {
-    const result = await pool.query(
-      "DELETE FROM clients WHERE id = $1 RETURNING *",
-      [id]
-    );
-    if (result.rows.length === 0) {
-      return res.status(404).json({ message: "Client not found" });
-    }
+    await req.prisma.clients.delete({
+      where: { id: Number(id) },
+    });
+
     res.json({ message: "Client deleted" });
   } catch (error) {
+    if (error.code === "P2025") {
+      return res.status(404).json({ message: "Client not found" });
+    }
     res.status(500).json({ error: error.message });
   }
 };
 
 const copyClient = async (req, res) => {
   const { id } = req.params;
-  try {
-    const sourceClient = await pool.query(
-      "SELECT * FROM clients WHERE id = $1",
-      [id]
-    );
 
-    if (sourceClient.rows.length === 0) {
+  try {
+    const sourceClient = await req.prisma.clients.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!sourceClient) {
       return res.status(404).json({ message: "Client not found" });
     }
 
-    const client = sourceClient.rows[0];
+    const { id: _, ...clientData } = sourceClient; // Исключаем id из данных
 
-    const query = `
-      INSERT INTO clients 
-        (name, email, phone, code, vat_code, user_id) 
-      VALUES 
-        ($1, $2, $3, $4, $5, $6) 
-      RETURNING *`;
+    const newClient = await req.prisma.clients.create({
+      data: {
+        ...clientData,
+        name: `${clientData.name} (Copy)`,
+      },
+    });
 
-    const values = [
-      `${client.name} (Copy)`,
-      client.email,
-      client.phone,
-      client.code,
-      client.vat_code,
-      client.user_id,
-    ];
-
-    const result = await pool.query(query, values);
-    res.status(201).json(result.rows[0]);
+    res.status(201).json(newClient);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

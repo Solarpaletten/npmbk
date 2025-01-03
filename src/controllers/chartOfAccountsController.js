@@ -1,14 +1,10 @@
-const pool = require("../db");
-
 const getAccounts = async (req, res) => {
   try {
-    const queryString = `
-      SELECT * FROM chart_of_accounts 
-      ORDER BY code
-    `;
+    const accounts = await req.prisma.chart_of_accounts.findMany({
+      orderBy: { code: 'asc' }, // Сортировка по коду
+    });
 
-    const result = await pool.query(queryString);
-    res.json(result.rows);
+    res.json(accounts);
   } catch (error) {
     console.error('Error getting accounts:', error);
     res.status(500).json({ error: error.message });
@@ -16,195 +12,166 @@ const getAccounts = async (req, res) => {
 };
 
 const getAccount = async (req, res) => {
- const { id } = req.params;
+  const { id } = req.params;
 
- try {
-   const result = await pool.query(
-     "SELECT * FROM chart_of_accounts WHERE id = $1",
-     [id]
-   );
-   
-   if (result.rows.length === 0) {
-     return res.status(404).json({ message: "Account not found" });
-   }
-   res.json(result.rows[0]);
- } catch (error) {
-   console.error('Error getting account:', error);
-   res.status(500).json({ error: error.message });
- }
+  try {
+    const account = await req.prisma.chart_of_accounts.findUnique({
+      where: { id: Number(id) },
+    });
+
+    if (!account) {
+      return res.status(404).json({ message: "Account not found" });
+    }
+
+    res.json(account);
+  } catch (error) {
+    console.error('Error getting account:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const createAccount = async (req, res) => {
- try {
-   const { 
-     code, 
-     name, 
-     account_type = null, 
-     parent_code = null,
-     is_active = true
-   } = req.body;
+  try {
+    const { code, name, account_type = null, parent_code = null, is_active = true } = req.body;
 
-   if (!code || !name) {
-     return res.status(400).json({
-       message: "Code and name are required",
-       received: { code, name },
-     });
-   }
+    if (!code || !name) {
+      return res.status(400).json({
+        message: "Code and name are required",
+        received: { code, name },
+      });
+    }
 
-   const query = `
-     INSERT INTO chart_of_accounts 
-       (code, name, account_type, parent_code, is_active) 
-     VALUES 
-       ($1, $2, $3, $4, $5) 
-     RETURNING *`;
+    const newAccount = await req.prisma.chart_of_accounts.create({
+      data: {
+        code,
+        name,
+        account_type,
+        parent_code,
+        is_active,
+      },
+    });
 
-   const values = [code, name, account_type, parent_code, is_active];
-
-   console.log('Creating account:', values);
-   const result = await pool.query(query, values);
-   console.log('Created account:', result.rows[0]);
-
-   res.status(201).json(result.rows[0]);
- } catch (error) {
-   console.error('Error creating account:', error);
-   res.status(500).json({ error: error.message });
- }
+    res.status(201).json(newAccount);
+  } catch (error) {
+    console.error('Error creating account:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const updateAccount = async (req, res) => {
- const { id } = req.params;
+  const { id } = req.params;
 
- try {
-   const { 
-     code, 
-     name, 
-     account_type,
-     parent_code,
-     is_active 
-   } = req.body;
+  try {
+    const { code, name, account_type, parent_code, is_active } = req.body;
 
-   const result = await pool.query(
-     `UPDATE chart_of_accounts 
-      SET code = $1, name = $2, account_type = $3, parent_code = $4,
-          is_active = $5
-      WHERE id = $6 
-      RETURNING *`,
-     [code, name, account_type, parent_code, is_active, id]
-   );
+    const updatedAccount = await req.prisma.chart_of_accounts.update({
+      where: { id: Number(id) },
+      data: {
+        code,
+        name,
+        account_type,
+        parent_code,
+        is_active,
+      },
+    });
 
-   if (result.rows.length === 0) {
-     return res.status(404).json({ message: "Account not found" });
-   }
-   res.json(result.rows[0]);
- } catch (error) {
-   console.error('Error updating account:', error);
-   res.status(500).json({ error: error.message });
- }
+    res.json(updatedAccount);
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Account not found" });
+    }
+    console.error('Error updating account:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const deleteAccount = async (req, res) => {
- const { id } = req.params;
+  const { id } = req.params;
 
- try {
-   // Проверяем наличие дочерних счетов
-   const childAccounts = await pool.query(
-     "SELECT id FROM chart_of_accounts WHERE parent_code = $1",
-     [id]
-   );
+  try {
+    const childAccounts = await req.prisma.chart_of_accounts.findMany({
+      where: { parent_code: id },
+    });
 
-   if (childAccounts.rows.length > 0) {
-     return res.status(400).json({ 
-       message: "Cannot delete account with child accounts" 
-     });
-   }
+    if (childAccounts.length > 0) {
+      return res.status(400).json({
+        message: "Cannot delete account with child accounts",
+      });
+    }
 
-   const result = await pool.query(
-     "DELETE FROM chart_of_accounts WHERE id = $1 RETURNING *",
-     [id]
-   );
-   
-   if (result.rows.length === 0) {
-     return res.status(404).json({ message: "Account not found" });
-   }
-   res.json({ message: "Account deleted successfully" });
- } catch (error) {
-   console.error('Error deleting account:', error);
-   res.status(500).json({ error: error.message });
- }
+    await req.prisma.chart_of_accounts.delete({
+      where: { id: Number(id) },
+    });
+
+    res.json({ message: "Account deleted successfully" });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Account not found" });
+    }
+    console.error('Error deleting account:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const copyAccount = async (req, res) => {
- const { id } = req.params;
+  const { id } = req.params;
 
- try {
-   const sourceAccount = await pool.query(
-     "SELECT * FROM chart_of_accounts WHERE id = $1",
-     [id]
-   );
+  try {
+    const sourceAccount = await req.prisma.chart_of_accounts.findUnique({
+      where: { id: Number(id) },
+    });
 
-   if (sourceAccount.rows.length === 0) {
-     return res.status(404).json({ message: "Account not found" });
-   }
+    if (!sourceAccount) {
+      return res.status(404).json({ message: "Account not found" });
+    }
 
-   const account = sourceAccount.rows[0];
+    const { id: _, ...accountData } = sourceAccount;
 
-   const query = `
-     INSERT INTO chart_of_accounts 
-       (code, name, account_type, parent_code, is_active) 
-     VALUES 
-       ($1, $2, $3, $4, $5) 
-     RETURNING *`;
+    const copiedAccount = await req.prisma.chart_of_accounts.create({
+      data: {
+        ...accountData,
+        code: `${accountData.code}_copy`,
+        name: `${accountData.name} (Copy)`,
+      },
+    });
 
-   const values = [
-     `${account.code}_copy`,
-     `${account.name} (Copy)`,
-     account.account_type,
-     account.parent_code,
-     account.is_active
-   ];
-
-   const result = await pool.query(query, values);
-   res.status(201).json(result.rows[0]);
- } catch (error) {
-   console.error('Error copying account:', error);
-   res.status(500).json({ error: error.message });
- }
+    res.status(201).json(copiedAccount);
+  } catch (error) {
+    console.error('Error copying account:', error);
+    res.status(500).json({ error: error.message });
+  }
 };
 
 const importAccounts = async (req, res) => {
   try {
     const accounts = req.body;
-    
+
     if (!Array.isArray(accounts)) {
-      return res.status(400).json({ error: 'Invalid data format' });
+      return res.status(400).json({ error: "Invalid data format" });
     }
 
-    const result = await pool.query(
-      `INSERT INTO chart_of_accounts 
-        (code, name, account_type, parent_code, is_active)
-       SELECT 
-        v.code,
-        v.name,
-        v.account_type,
-        v.parent_code,
-        COALESCE(v.is_active, true)
-       FROM jsonb_to_recordset($1::jsonb) AS v(
-        code VARCHAR(50),
-        name VARCHAR(255),
-        account_type VARCHAR(50),
-        parent_code VARCHAR(50),
-        is_active BOOLEAN
-       )
-       ON CONFLICT (code) DO UPDATE SET
-        name = EXCLUDED.name,
-        account_type = EXCLUDED.account_type,
-        parent_code = EXCLUDED.parent_code,
-        is_active = EXCLUDED.is_active
-       RETURNING *`,
-      [JSON.stringify(accounts)]
+    const createdAccounts = await req.prisma.$transaction(
+      accounts.map(account =>
+        req.prisma.chart_of_accounts.upsert({
+          where: { code: account.code },
+          update: {
+            name: account.name,
+            account_type: account.account_type,
+            parent_code: account.parent_code,
+            is_active: account.is_active ?? true,
+          },
+          create: {
+            code: account.code,
+            name: account.name,
+            account_type: account.account_type,
+            parent_code: account.parent_code,
+            is_active: account.is_active ?? true,
+          },
+        })
+      )
     );
 
-    res.json(result.rows);
+    res.json(createdAccounts);
   } catch (error) {
     console.error('Error importing accounts:', error);
     res.status(500).json({ error: error.message });
@@ -212,11 +179,11 @@ const importAccounts = async (req, res) => {
 };
 
 module.exports = {
- getAccounts,
- getAccount,
- createAccount,
- updateAccount,
- deleteAccount,
- copyAccount,
- importAccounts,
+  getAccounts,
+  getAccount,
+  createAccount,
+  updateAccount,
+  deleteAccount,
+  copyAccount,
+  importAccounts,
 };

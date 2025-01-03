@@ -1,85 +1,91 @@
-const pool = require("../db");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs"); // Библиотека для хэширования паролей
+const jwt = require("jsonwebtoken"); // Библиотека для создания и проверки токенов JWT
 
+// Функция входа пользователя
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password } = req.body; // Извлекаем email и пароль из запроса
 
   try {
-    const result = await pool.query("SELECT * FROM users WHERE email = $1", [
-      email,
-    ]);
-    if (result.rows.length === 0) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    const { id, username, password_hash, role } = result.rows[0];
-    const validPassword = await bcrypt.compare(password, password_hash);
-
-    if (!validPassword) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    const token = jwt.sign({ userId: id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    // Ищем пользователя в базе данных по email
+    const user = await req.prisma.users.findUnique({
+      where: { email }, // Поиск по уникальному полю email
     });
 
-    res.json({ token, username, role, userId: id });
+    if (!user) {
+      // Если пользователь не найден, возвращаем ошибку
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Сравниваем введенный пароль с хэшем из базы данных
+    const validPassword = await bcrypt.compare(password, user.password_hash);
+
+    if (!validPassword) {
+      // Если пароль неверный, возвращаем ошибку
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    // Генерируем JWT токен с id пользователя
+    const token = jwt.sign({ userId: user.id }, process.env.JWT_SECRET, {
+      expiresIn: "1h", // Токен действует 1 час
+    });
+
+    // Возвращаем токен и информацию о пользователе
+    res.json({
+      token,
+      username: user.username,
+      role: user.role,
+      userId: user.id,
+    });
   } catch (error) {
+    // Обрабатываем ошибки и возвращаем сообщение об ошибке
     res.status(500).json({ error: error.message });
   }
 };
 
+// Функция регистрации пользователя
 const registerUser = async (req, res) => {
-  const { username, email } = req.body;
-  const password = req.body.password || "default1234";
-  const role = req.body.role || "standard";
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const client = await pool.connect();
+  const { username, email } = req.body; // Извлекаем имя пользователя и email из запроса
+  const password = req.body.password || "default1234"; // Если пароль не указан, задаем значение по умолчанию
+  const role = req.body.role || "standard"; // Если роль не указана, задаем "standard"
+  const hashedPassword = await bcrypt.hash(password, 10); // Хэшируем пароль с солью 10
 
   try {
-    await client.query("BEGIN");
+    // Создаем нового пользователя
+    const newUser = await req.prisma.users.create({
+      data: {
+        username, // Имя пользователя
+        email, // Email
+        role, // Роль пользователя
+        password_hash: hashedPassword, // Хэш пароля
+        // Добавлено: создание записи клиента, связанного с пользователем
+        clients: {
+          create: {
+            name: `${username} Company`, // Название компании по умолчанию
+            email, // Email компании
+            phone: null, // Телефон компании (по умолчанию null)
+            code: null, // Код компании (по умолчанию null)
+            vat_code: null, // Налоговый код компании (по умолчанию null)
+            is_main: true, // Указываем, что клиент основной
+          },
+        },
+        // Добавлено: создание склада, связанного с пользователем
+        warehouses: {
+          create: {
+            name: "Main Warehouse", // Название склада по умолчанию
+          },
+        },
+      },
+      include: {
+        clients: true, // Включаем данные о клиентах в ответ
+        warehouses: true, // Включаем данные о складах в ответ
+      },
+    });
 
-    const {
-      rows: [user],
-    } = await client.query(
-      "INSERT INTO users (username, email, role, password_hash) VALUES ($1, $2, $3, $4) RETURNING *",
-      [username, email, role, hashedPassword]
-    );
-
-    const {
-      rows: [clientData],
-    } = await client.query(
-      `
-      INSERT INTO clients 
-        (name, email, phone, code, vat_code, user_id, is_main)
-      VALUES 
-        ($1, $2, $3, $4, $5, $6, $7) 
-      RETURNING *`,
-      [`${user.username} Company`, user.email, null, null, null, user.id, true]
-    );
-
-    const {
-      rows: [warehouse],
-    } = await client.query(
-      `
-      INSERT INTO warehouses 
-        (name, company_id, responsible_person_id, user_id)
-      VALUES 
-        ($1, $2, $3, $4) 
-      RETURNING *`,
-      ["Main Warehouse", clientData.id, user.id, user.id]
-    );
-
-    await client.query("COMMIT");
-
-    res.status(201).json({ user, client: clientData, warehouse });
+    // Возвращаем данные о созданном пользователе, клиенте и складе
+    res.status(201).json(newUser);
   } catch (error) {
-    await client.query("ROLLBACK");
+    // Обрабатываем ошибки и возвращаем сообщение об ошибке
     res.status(500).json({ error: error.message });
-  } finally {
-    client.release();
   }
 };
 

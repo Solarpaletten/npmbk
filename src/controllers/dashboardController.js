@@ -1,16 +1,19 @@
-const pool = require("../db");
-
 const getDashboard = async (req, res) => {
   try {
-    const result = await pool.query(`
-      SELECT
-        COUNT(*) AS total_users,
-        COUNT(CASE WHEN role = 'admin' THEN 1 END) AS admin_users,
-        COUNT(CASE WHEN role = 'standard' THEN 1 END) AS standard_users
-      FROM users
-    `);
+    // Используем Prisma для выполнения подсчетов
+    const totalUsers = await req.prisma.users.count();
+    const adminUsers = await req.prisma.users.count({
+      where: { role: "admin" },
+    });
+    const standardUsers = await req.prisma.users.count({
+      where: { role: "standard" },
+    });
 
-    res.json(result.rows[0]);
+    res.json({
+      total_users: totalUsers,
+      admin_users: adminUsers,
+      standard_users: standardUsers,
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

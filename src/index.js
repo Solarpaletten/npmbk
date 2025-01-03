@@ -1,9 +1,10 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const authMiddleware = require("./middlewares/authMiddleware");
 const morgan = require('morgan');
 const helmet = require('helmet');
+const prisma = require('./prisma');
+const authMiddleware = require("./middlewares/authMiddleware");
 
 dotenv.config();
 
@@ -24,18 +25,23 @@ const payrollRoutes = require("./routes/payrollRoutes");
 
 const app = express();
 
-// Middleware - все middleware должны быть в начале
-app.use(morgan('dev')); // Логирование запросов
-app.use(helmet()); // Безопасность
-app.use(cors()); // CORS
-app.use(express.json()); // Парсинг JSON
+// Middleware
+app.use(morgan('dev'));
+app.use(helmet());
+app.use(cors());
+app.use(express.json());
+
+// Добавляем Prisma в req для доступа во всех маршрутах
+app.use((req, res, next) => {
+  req.prisma = prisma;
+  next();
+});
 
 // API Routes
-// Публичные маршруты (без авторизации)
+// Публичные маршруты
 app.use("/api/auth", authRoutes);
 
-
-// Защищенные маршруты (требуют авторизации)
+// Защищенные маршруты
 app.use("/api/users", authMiddleware, userRoutes);
 app.use("/api/dashboard", authMiddleware, dashboardRoutes);
 app.use("/api/clients", authMiddleware, clientRoutes);
@@ -48,21 +54,26 @@ app.use("/api/chart-of-accounts", authMiddleware, chartOfAccountsRoutes);
 app.use("/api/general-ledger", authMiddleware, generalLedgerRoutes);
 app.use("/api/employees", authMiddleware, employeeRoutes);
 app.use("/api/payroll", authMiddleware, payrollRoutes);
+
 // Root endpoint
 app.get("/", (req, res) => {
   res.send("Welcome to the API!");
 });
 
-// Error handlers должны быть последними middleware
-// Обработка 404
+// 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({ error: 'Route not found' });
-}); 
+});
 
-// Обработка ошибок
+// Error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'Something went wrong!' });
+});
+
+// Graceful shutdown
+process.on('beforeExit', async () => {
+  await prisma.$disconnect();
 });
 
 // Server startup
