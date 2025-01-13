@@ -10,7 +10,7 @@ const app = express();
 // CORS configuration
 app.use(cors({
   origin: [
-    'https://npmfr.onrender.com',  // фронтенд на render
+    'https://npmbk.onrender.com',  // фронтенд на render
     'http://localhost:3000',       // локальный фронтенд
     'http://localhost:3001'        // локальный бэкенд
   ],
@@ -21,7 +21,7 @@ app.use(cors({
 app.use((req, res, next) => {
   res.setHeader(
     'Content-Security-Policy',
-    "default-src 'self'; connect-src 'self' https://npmfr.onrender.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
+    "default-src 'self'; connect-src 'self' https://npmbk.onrender.com; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
   );
   next();
 });
@@ -34,7 +34,7 @@ app.use(helmet({
       scriptSrc: ["'self'", "'unsafe-inline'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", 'data:', 'https:'],
-      connectSrc: ["'self'", 'https://npmfr.onrender.com'],
+      connectSrc: ["'self'", 'https://npmbk.onrender.com'],
       fontSrc: ["'self'", 'https:', 'data:'],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
